@@ -1,43 +1,14 @@
 package com.example.dishy_app.ui.screens
 
-import android.graphics.drawable.Icon
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Casino
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.IosShare
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.VolumeDown
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,37 +16,35 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
 
 
 @Composable
 fun PlaceDetailScreen(place: Place, navController: NavController) {
     val scrollState = rememberScrollState()
 
-    // Usamos un Box para que la barra inferior se quede fija abajo
     Box(modifier = Modifier.fillMaxSize()) {
 
-        // 1. Contenido con Scroll
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(bottom = 80.dp) // Espacio para que el contenido no quede oculto tras la barra
+                .padding(bottom = 80.dp)
         ) {
-            // Imagen Hero
+            // Imagen Hero (Cargada desde Internet)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp)
             ) {
-                Image(
-                    painter = painterResource(id = place.imageRes),
+                AsyncImage(
+                    model = place.imageUrl, // <-- CAMBIO: Ahora usamos imageUrl
                     contentDescription = place.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -97,7 +66,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                     )
                 }
 
-                // Botones share y favoritos
+                // Botones compartir y favoritos
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -111,7 +80,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                             .background(Color(0x99000000))
                     ) {
                         Icon(
-                            imageVector = Icons.Default.IosShare,
+                            imageVector = Icons.Default.Share,
                             contentDescription = "Compartir",
                             tint = Color.White
                         )
@@ -130,7 +99,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                     }
                 }
 
-                // Badge OPEN NOW
+                // Etiqueta OPEN NOW
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -157,7 +126,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                 }
             }
 
-            // Contenido de texto y detalles
+            // Detalles del texto
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -184,7 +153,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "A quiet spot perfect for deep work with high-speed internet and plenty of power outlets.",
+                    text = place.description,
                     fontSize = 14.sp,
                     color = Color.DarkGray,
                     lineHeight = 22.sp
@@ -197,7 +166,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     VibeChip(Icons.Default.Wifi, "100 Mbps", "SPEED", Modifier.weight(1f))
-                    VibeChip(Icons.Default.PowerSettingsNew, "Plenty", "OUTLETS", Modifier.weight(1f))
+                    VibeChip(Icons.Default.Power, "Plenty", "OUTLETS", Modifier.weight(1f))
                     VibeChip(Icons.Default.VolumeDown, "Low Noise", "QUIET", Modifier.weight(1f))
                 }
 
@@ -220,14 +189,15 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // Fotos de la comunidad (Cargadas desde Internet)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    place.communityPhotos.forEachIndexed { index, photoRes ->
-                        Image(
-                            painter = painterResource(id = photoRes),
-                            contentDescription = "Photo $index",
+                    place.communityPhotos.forEach { photoUrl ->
+                        AsyncImage(
+                            model = photoUrl, // <-- CAMBIO: Ahora usamos photoUrl
+                            contentDescription = "Community Photo",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .weight(1f)
@@ -245,14 +215,14 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)),
                     shape = RoundedCornerShape(30.dp)
                 ) {
-                    Icon(Icons.Default.IosShare, null, Modifier.size(18.dp))
+                    Icon(Icons.Default.Directions, null, Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Get Directions", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
-        // 2. Barra de Navegación Inferior (Fija al fondo)
+        // Barra inferior fija
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -268,13 +238,12 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                 ) {
                     NavigationItem(Icons.Default.Home, "Explore", false)
                     NavigationItem(Icons.Default.Public, "Map", false)
-                    Spacer(modifier = Modifier.width(48.dp)) // Espacio para el FAB
-                    NavigationItem(Icons.Default.Favorite, "Saved", false)
+                    Spacer(modifier = Modifier.width(48.dp))
+                    NavigationItem(Icons.Default.FavoriteBorder, "Saved", false)
                     NavigationItem(Icons.Default.Person, "Profile", false)
                 }
             }
 
-            // 3. El Dado (Floating Action Button) centrado sobre la barra
             FloatingActionButton(
                 onClick = { },
                 containerColor = Color(0xFFFF4A3D),
@@ -282,7 +251,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                 shape = CircleShape,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-28).dp) // Lo sube para que quede a mitad de la barra
+                    .offset(y = (-28).dp)
                     .size(56.dp)
             ) {
                 Icon(Icons.Default.Casino, "Random", Modifier.size(28.dp))
@@ -292,12 +261,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
 }
 
 @Composable
-fun VibeChip(
-    icon: ImageVector,
-    value: String,
-    label: String,
-    modifier: Modifier = Modifier
-) {
+fun VibeChip(icon: ImageVector, value: String, label: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
@@ -308,24 +272,10 @@ fun VibeChip(
             modifier = Modifier.padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = Color(0xFF555555),
-                modifier = Modifier.size(22.dp)
-            )
+            Icon(icon, null, tint = Color(0xFF555555), modifier = Modifier.size(22.dp))
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = value,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-            Text(
-                text = label,
-                fontSize = 10.sp,
-                color = Color.Gray
-            )
+            Text(value, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            Text(label, fontSize = 10.sp, color = Color.Gray)
         }
     }
 }
@@ -340,4 +290,3 @@ fun PlaceDetailScreenPreview() {
         )
     }
 }
-
