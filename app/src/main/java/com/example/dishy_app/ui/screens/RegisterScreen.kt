@@ -1,29 +1,11 @@
 package com.example.dishy_app.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,36 +17,37 @@ import androidx.compose.ui.unit.sp
 import com.example.dishy_app.ui.theme.DishyAppTheme
 
 @Composable
-fun RegisterScreen() {
+fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) {
+    // Estados para poder escribir en los campos
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-
-
         Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-
-
             Spacer(modifier = Modifier.height(88.dp))
 
             Text(
-                text = "Creat Account",
+                text = "Create Account",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Left,
                 modifier = Modifier.fillMaxWidth()
-
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Join the Dishy Community ",
+                text = "Join the Dishy Community",
                 fontSize = 14.sp,
                 color = Color.Gray,
                 fontWeight = FontWeight.Bold,
@@ -74,188 +57,136 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(46.dp))
 
+            // Campo Nombre Completo
             OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                label = {
-                    Text(text = "Full Name")
-                },
-                placeholder = {
-                    Text(text = "Write you full name")
-
-                },
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Full Name") },
+                placeholder = { Text("Write your full name") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp)
-
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Campo Email
             OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                label = {
-                    Text(text = "Email")
-                },
-                placeholder = {
-                    Text(text = "hello@Dishyapp.com")
-
-                },
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                placeholder = { Text("hello@dishyapp.com") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp)
-
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Campo Contraseña
             OutlinedTextField(
-                value = "",
-                onValueChange = {},
-                label = {
-                    Text(text = "Password")
-                },
-                placeholder = {
-                    Text(text = "*********")
-
-                },
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                placeholder = { Text("*********") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp)
-
             )
 
             Spacer(modifier = Modifier.height(28.dp))
 
+            // Botón Principal de Registro
             Button(
-                onClick = { },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                onClick = {
+                    onNavigateToHome()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)),
-                shape = RoundedCornerShape(24.dp),
-
-                ) {
+                shape = RoundedCornerShape(24.dp)
+            ) {
                 Text(
-                    text = "Sing up",
+                    text = "Sign up",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // Divisor "Or continue with"
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Divider(
+                HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = Color.LightGray,
-                    thickness = 1.dp
+                    color = Color.LightGray
                 )
-
                 Text(
                     text = "Or continue with",
                     modifier = Modifier.padding(horizontal = 16.dp),
                     color = Color.Gray,
                     fontSize = 14.sp
                 )
-
-                Divider(
+                HorizontalDivider(
                     modifier = Modifier.weight(1f),
-                    color = Color.LightGray,
-                    thickness = 1.dp
+                    color = Color.LightGray
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
+            // Botones de Redes Sociales (Google y Apple)
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 0.dp),
-                verticalArrangement = Arrangement.SpaceEvenly
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Botón de Google
                 OutlinedButton(
                     onClick = { },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Email,
-                        contentDescription = "Google",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Google",
-                        color = Color.Black
-                        )
+                    Icon(Icons.Default.Email, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Google", color = Color.Black)
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Botón de Apple
-                OutlinedButton(
+                Button(
                     onClick = { },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Black
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                     shape = RoundedCornerShape(12.dp)
-
-                    
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Email,
-                        contentDescription = "Apple",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Apple",
-                        color = Color.White
-
-                    )
-
-                }
-
-                Spacer(modifier = Modifier.height(46.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Already have an account? ",
-                        color = Color.Gray,
-                        fontWeight = FontWeight.Bold
-                    )
-                    TextButton(onClick = { }) {
-                        Text(
-                            text = "Log in",
-                            color = Color(0xFFFF4A3D),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Icon(Icons.Default.Email, null, modifier = Modifier.size(20.dp), tint = Color.White)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Apple", color = Color.White)
                 }
             }
 
+            Spacer(modifier = Modifier.height(32.dp))
 
+            // Volver al Login
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Already have an account? ", color = Color.Gray)
+                TextButton(onClick = { onNavigateToLogin() }) {
+                    Text("Log in", color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold)
+                }
+            }
         }
-
     }
-
-
-
-
 }
-
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun RegisterScreenPreview() {
-    DishyAppTheme{
-        RegisterScreen()
+    DishyAppTheme {
+        RegisterScreen(onNavigateToLogin = {}, onNavigateToHome = {})
     }
 }
