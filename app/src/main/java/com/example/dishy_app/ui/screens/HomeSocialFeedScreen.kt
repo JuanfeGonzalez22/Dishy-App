@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -197,9 +196,6 @@ fun HomeSocialFeedScreen(navController: androidx.navigation.NavController) {
                     containerColor = Color(0xFFFF4A3D),
                     contentColor = Color.White,
                     shape = CircleShape,
-                    modifier = Modifier
-                        .offset(y = 80.dp)
-                        .size(60.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Casino,
