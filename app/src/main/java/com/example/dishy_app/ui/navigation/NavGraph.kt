@@ -10,6 +10,7 @@ import com.example.dishy_app.ui.screens.HomeSocialFeedScreen
 import com.example.dishy_app.ui.screens.LoginScreen
 import com.example.dishy_app.ui.screens.PlaceDetailScreen
 import com.example.dishy_app.ui.screens.RegisterScreen
+import com.example.dishy_app.ui.screens.ShakeDiscoverScreen
 import com.example.dishy_app.ui.screens.samplePlaces
 
 @Composable
@@ -38,6 +39,10 @@ fun AppNavGraph(){
 
         composable("home") {
             HomeSocialFeedScreen(navController = navController)
+        }
+
+        composable("shake"){
+            ShakeDiscoverScreen(navController = navController)
         }
         
         composable(

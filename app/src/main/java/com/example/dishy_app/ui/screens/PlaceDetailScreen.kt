@@ -282,8 +282,8 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                 shape = CircleShape,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-28).dp) // Lo sube para que quede a mitad de la barra
-                    .size(56.dp)
+                    .offset(y = (-10).dp) // Lo sube para que quede a mitad de la barra
+                    .size(66.dp)
             ) {
                 Icon(Icons.Default.Casino, "Random", Modifier.size(28.dp))
             }

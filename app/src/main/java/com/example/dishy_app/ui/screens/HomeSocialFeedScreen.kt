@@ -72,7 +72,9 @@ data class Place(
     val rating: Double,
     val reviews: Int,
     val imageRes: Int,       // <-- nuevo campo para la imagen
-    val communityPhotos: List<Int> // <-- nuevo campo para las fotos de la comunidad
+    val communityPhotos: List<Int>,
+    val lat: Double,
+    val lng: Double// <-- nuevo campo para las fotos de la comunidad
 )
 
 
@@ -89,7 +91,9 @@ val samplePlaces = listOf(
             R.drawable.photo1_coffee,
             R.drawable.photo2_coffee,
             R.drawable.photo3_coffee
-        )
+        ),
+        lat = 4.5339,
+        lng = -75.6811
     ),
     Place(
         id = 2,
@@ -103,7 +107,9 @@ val samplePlaces = listOf(
             R.drawable.photo1_coffee,
             R.drawable.photo2_coffee,
             R.drawable.photo3_coffee
-        )
+        ),
+        lat = 4.5350,
+        lng = -75.6820
     ),
     Place(
         id = 3,
@@ -117,7 +123,9 @@ val samplePlaces = listOf(
             R.drawable.photo1_coffee,
             R.drawable.photo2_coffee,
             R.drawable.photo3_coffee
-        )
+        ),
+        lat = 4.5360,
+        lng = -75.6800
     )
 )
 
