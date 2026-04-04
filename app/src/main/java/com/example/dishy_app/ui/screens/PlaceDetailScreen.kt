@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.dishy_app.ui.components.BottomBarComponent
 
 
 @Composable
@@ -44,7 +45,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                     .height(280.dp)
             ) {
                 AsyncImage(
-                    model = place.imageUrl, // <-- CAMBIO: Ahora usamos imageUrl
+                    model = place.imageUrl,
                     contentDescription = place.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -196,7 +197,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                 ) {
                     place.communityPhotos.forEach { photoUrl ->
                         AsyncImage(
-                            model = photoUrl, // <-- CAMBIO: Ahora usamos photoUrl
+                            model = photoUrl,
                             contentDescription = "Community Photo",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -222,40 +223,11 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
             }
         }
 
-        // Barra inferior fija
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 8.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    NavigationItem(Icons.Default.Home, "Explore", false)
-                    NavigationItem(Icons.Default.Public, "Map", false)
-                    Spacer(modifier = Modifier.width(48.dp))
-                    NavigationItem(Icons.Default.FavoriteBorder, "Saved", false)
-                    NavigationItem(Icons.Default.Person, "Profile", false)
-                }
-            }
-
-            FloatingActionButton(
-                onClick = { },
-                containerColor = Color(0xFFFF4A3D),
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-28).dp)
-                    .size(56.dp)
-            ) {
-                Icon(Icons.Default.Casino, "Random", Modifier.size(28.dp))
-            }
+            BottomBarComponent(
+                currentRoute = "",
+                onNavigate = { route -> navController.navigate(route) }
+            )
         }
     }
 }
