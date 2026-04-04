@@ -6,25 +6,30 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.dishy_app.ui.screens.ForgotPasswordScreen
 import com.example.dishy_app.ui.screens.HomeSocialFeedScreen
 import com.example.dishy_app.ui.screens.LoginScreen
+import com.example.dishy_app.ui.screens.MapScreen
 import com.example.dishy_app.ui.screens.PlaceDetailScreen
 import com.example.dishy_app.ui.screens.RegisterScreen
+import com.example.dishy_app.ui.screens.SavedPlacesScreen
+import com.example.dishy_app.ui.screens.ShakeDiscoverScreen
 import com.example.dishy_app.ui.screens.samplePlaces
 
 @Composable
-fun AppNavGraph(){
+fun AppNavGraph() {
     val navController = rememberNavController()
 
     NavHost(
         navController = navController,
         startDestination = "login"
-    ){
+    ) {
         // 1. Pantalla de Login
         composable("login") {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate("register") },
-                onNavigateToHome = { navController.navigate("home") }
+                onNavigateToHome = { navController.navigate("home") },
+                onNavigateToForgotPassword = { navController.navigate("forgot_password") }
             )
         }
 
@@ -36,10 +41,29 @@ fun AppNavGraph(){
             )
         }
 
+        // 3. Pantalla de Recuperar Contraseña
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 4. Pantalla de Home
         composable("home") {
             HomeSocialFeedScreen(navController = navController)
         }
-        
+
+        // 5. Pantalla de Shake
+        composable("shake") {
+            ShakeDiscoverScreen(navController = navController)
+        }
+
+        // 6. Pantalla de Map
+        composable("map") {
+            MapScreen(navController = navController)
+        }
+
+        // 7. Pantalla de Detalles del Lugar
         composable(
             route = "detail/{placeId}",
             arguments = listOf(navArgument("placeId") { type = NavType.IntType })
@@ -49,6 +73,11 @@ fun AppNavGraph(){
             if (place != null) {
                 PlaceDetailScreen(place = place, navController = navController)
             }
+        }
+
+        // 8. Pantalla de Saved Places
+        composable("saved_places") {
+            SavedPlacesScreen(navController = navController)
         }
     }
 }
