@@ -22,6 +22,7 @@ import com.example.dishy_app.ui.viewModel.LoginViewModel
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onNavigateToHome: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit,
     loginViewModel: LoginViewModel = viewModel()
 ) {
     Surface(
@@ -98,7 +99,7 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth().padding(8.dp),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = {}) {
+                    TextButton(onClick = {onNavigateToForgotPassword() }) {
                         Text(text = "Forgot Password?", color = Color(0xFFFF4A3D))
                     }
                 }
@@ -179,6 +180,6 @@ fun LoginScreen(
 @Composable
 fun LoginScreenPreview() {
     DishyAppTheme {
-        LoginScreen(onNavigateToRegister = {}, onNavigateToHome = {})
+        LoginScreen(onNavigateToRegister = {}, onNavigateToHome = {}, onNavigateToForgotPassword = {})
     }
 }
