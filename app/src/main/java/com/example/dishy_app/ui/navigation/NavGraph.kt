@@ -8,10 +8,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.dishy_app.ui.screens.HomeSocialFeedScreen
 import com.example.dishy_app.ui.screens.LoginScreen
-import com.example.dishy_app.ui.screens.MapScreen
 import com.example.dishy_app.ui.screens.PlaceDetailScreen
 import com.example.dishy_app.ui.screens.RegisterScreen
-import com.example.dishy_app.ui.screens.ShakeDiscoverScreen
 import com.example.dishy_app.ui.screens.samplePlaces
 
 @Composable
@@ -38,19 +36,8 @@ fun AppNavGraph(){
             )
         }
 
-        // 3. Pantalla de Home
         composable("home") {
             HomeSocialFeedScreen(navController = navController)
-        }
-
-        // 4. Pantalla de Shake
-        composable("shake"){
-            ShakeDiscoverScreen(navController = navController)
-        }
-
-        // 5. Pantalla de Map
-        composable("map"){
-            MapScreen(navController = navController)
         }
         
         composable(
