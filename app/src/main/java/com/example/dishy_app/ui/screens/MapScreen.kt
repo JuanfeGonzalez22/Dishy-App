@@ -37,6 +37,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import androidx.compose.runtime.collectAsState
+import coil.compose.AsyncImage
 
 @Composable
 fun MapScreen(navController: NavController) {
@@ -83,11 +84,15 @@ fun MapScreen(navController: NavController) {
                     controller.setCenter(startPoint)
 
                     // Marcadores de cada lugar
-                    samplePlaces.forEach { place ->
+                    val coordenadas = listOf(
+                        Triple("The Coffee Collective", 4.5339, -75.6811),
+                        Triple("Nomad Workspace", 4.5350, -75.6820),
+                        Triple("Bluebird Bistro", 4.5360, -75.6800)
+                    )
+                    coordenadas.forEach { (nombre, lat, lng) ->
                         val marker = Marker(this)
-                        marker.position = GeoPoint(place.lat, place.lng)
-                        marker.title = place.name
-                        marker.snippet = place.description
+                        marker.position = GeoPoint(lat, lng)
+                        marker.title = nombre
                         overlays.add(marker)
                     }
                 }
@@ -259,8 +264,8 @@ fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
                     .fillMaxWidth()
                     .height(100.dp)
             ) {
-                Image(
-                    painter = painterResource(id = place.imageRes),
+                AsyncImage(
+                    model = place.imageUrl,
                     contentDescription = place.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()

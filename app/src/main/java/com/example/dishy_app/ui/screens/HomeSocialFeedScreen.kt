@@ -236,9 +236,19 @@ fun PlaceCard(place: Place, onClick: () -> Unit = {}) {
 }
 
 @Composable
-fun NavigationItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, selected: Boolean) {
+fun NavigationItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit = {}
+) {
     val color = if (selected) Color(0xFFFF4A3D) else Color.Gray
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(top = 8.dp)
+    ) {
         Icon(icon, label, tint = color, modifier = Modifier.size(24.dp))
         Text(label, fontSize = 10.sp, color = color)
     }
