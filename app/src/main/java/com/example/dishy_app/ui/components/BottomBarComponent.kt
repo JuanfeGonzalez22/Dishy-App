@@ -1,6 +1,5 @@
 package com.example.dishy_app.ui.components
 
-import androidx.annotation.NavigationRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,11 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.dishy_app.ui.screens.NavigationItem
-import okhttp3.Route
 
 @Composable
 fun BottomBarComponent(
@@ -59,16 +55,16 @@ fun BottomBarComponent(
                 icon = Icons.Default.Public,
                 label = "Map",
                 selected = currentRoute == "map",
-                onClick = {  }
+                onClick = { onNavigate("map") }
             )
 
             Box(
                 modifier = Modifier
                     .size(54.dp)
-                    .offset(y = (-10.dp))
+                    .offset(y = (-10).dp)
                     .clip(CircleShape)
                     .background(Color(0xFFFF4A3D))
-                    .clickable {},
+                    .clickable { onNavigate("shake") },
                 contentAlignment = Alignment.Center
             ) {
 
@@ -84,14 +80,14 @@ fun BottomBarComponent(
             NavigationItem(
                 icon = Icons.Default.FavoriteBorder,
                 label = "Saved",
-                selected = currentRoute == "Saved",
+                selected = currentRoute == "saved_places",
                 onClick = { onNavigate("saved_places") }
             )
 
             NavigationItem(
                 icon = Icons.Default.Person,
                 label = "Profile",
-                selected = currentRoute == "Profile",
+                selected = currentRoute == "profile",
                 onClick = {  }
             )
 
@@ -99,24 +95,3 @@ fun BottomBarComponent(
     }
 
 }
-
-//@Composable
-//fun NavigationItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
-//    val color = if (selected) Color(0xFFFF4A3D) else Color.Gray
-//    Column(
-//        horizontalAlignment = Alignment.CenterHorizontally,
-//        modifier = Modifier
-//            .clickable { onClick() }
-//            .padding(top = 8.dp)
-//    ) {
-//        Icon(
-//            icon,
-//            label,
-//            tint = color,
-//            modifier = Modifier.size(24.dp))
-//        Text(
-//            label,
-//            fontSize = 10.sp,
-//            color = color)
-//    }
-//}

@@ -17,18 +17,26 @@ import com.example.dishy_app.ui.screens.ShakeDiscoverScreen
 import com.example.dishy_app.ui.screens.samplePlaces
 
 @Composable
-fun AppNavGraph() {
+fun AppNavGraph(isUserLoggedIn: Boolean = false) {
     val navController = rememberNavController()
+    
+    // Determinar pantalla inicial según autenticación
+    val startDestination = if (isUserLoggedIn) "home" else "login"
 
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = startDestination
     ) {
         // 1. Pantalla de Login
         composable("login") {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate("register") },
-                onNavigateToHome = { navController.navigate("home") },
+                onNavigateToHome = { 
+                    // Limpiar backstack para no volver al login con botón atrás
+                    navController.navigate("home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                },
                 onNavigateToForgotPassword = { navController.navigate("forgot_password") }
             )
         }
@@ -37,7 +45,11 @@ fun AppNavGraph() {
         composable("register") {
             RegisterScreen(
                 onNavigateToLogin = { navController.navigate("login") },
-                onNavigateToHome = { navController.navigate("home") }
+                onNavigateToHome = { 
+                    navController.navigate("home") {
+                        popUpTo("register") { inclusive = true }
+                    }
+                }
             )
         }
 

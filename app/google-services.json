@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "559431728647",
+    "project_id": "dishy-c2614",
+    "storage_bucket": "dishy-c2614.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:559431728647:android:8d356626cc5f194d4ff4a2",
+        "android_client_info": {
+          "package_name": "com.example.dishy_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "559431728647-3ccqianalmamiscg94ia0mckbpp1fg86.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dishy_app",
+            "certificate_hash": "3e8778cb84501ffb018db17c503aa62d31329ba3"
+          }
+        },
+        {
+          "client_id": "559431728647-96mrgngv34njj9gisb0rhh1gp8uiim3u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAQmCkM300oHZ-OK6tzUAWRym_VpruuCg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "559431728647-96mrgngv34njj9gisb0rhh1gp8uiim3u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

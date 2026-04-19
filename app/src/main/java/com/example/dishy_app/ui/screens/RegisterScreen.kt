@@ -40,7 +40,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 text = "Create Account",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Left,
+                textAlign = TextAlign.Start,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -51,7 +51,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 fontSize = 14.sp,
                 color = Color.Gray,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Left,
+                textAlign = TextAlign.Start,
                 modifier = Modifier.fillMaxWidth()
             )
 

@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.dishy_app.ui.components.NavigationItem
 
 
 @Composable
@@ -176,8 +177,7 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                    verticalAlignment = Alignment.CenterVertically) {
                     Text(text = "Community", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Text(
                         text = "See All",
@@ -236,16 +236,16 @@ fun PlaceDetailScreen(place: Place, navController: NavController) {
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    NavigationItem(Icons.Default.Home, "Explore", false)
-                    NavigationItem(Icons.Default.Public, "Map", false)
+                    NavigationItem(Icons.Default.Home, "Explore", false, onClick = { navController.navigate("home") })
+                    NavigationItem(Icons.Default.Public, "Map", false, onClick = { navController.navigate("map") })
                     Spacer(modifier = Modifier.width(48.dp))
-                    NavigationItem(Icons.Default.FavoriteBorder, "Saved", false)
+                    NavigationItem(Icons.Default.FavoriteBorder, "Saved", false, onClick = { navController.navigate("saved_places") })
                     NavigationItem(Icons.Default.Person, "Profile", false)
                 }
             }
 
             FloatingActionButton(
-                onClick = { },
+                onClick = { navController.navigate("shake") },
                 containerColor = Color(0xFFFF4A3D),
                 contentColor = Color.White,
                 shape = CircleShape,
