@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.FirebaseAuthManager
+import com.example.dishy_app.ui.components.BottomBarComponent
 import com.example.dishy_app.ui.components.NavigationItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,39 +76,16 @@ fun HomeSocialFeedScreen(navController: androidx.navigation.NavController) {
                 )
             },
             bottomBar = {
-                BottomAppBar(
-                    containerColor = Color.White,
-                    tonalElevation = 8.dp
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        NavigationItem(Icons.Default.Home, "Home", selected = true)
-                        NavigationItem(Icons.Default.Public, "Map", selected = false, onClick = { navController.navigate("map") })
-                        
-                        Box(
-                            modifier = Modifier
-                                .size(54.dp)
-                                .offset(y = (-10).dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFF4A3D))
-                                .clickable { navController.navigate("shake") },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Casino,
-                                contentDescription = "Randomize",
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
+                BottomBarComponent(
+                    currentRoute = "home",
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-
-                        NavigationItem(Icons.Default.FavoriteBorder, "Saved", selected = false, onClick = { navController.navigate("saved_places") })
-                        NavigationItem(Icons.Default.Person, "Profile", selected = false)
                     }
-                }
+                )
             }
         ) { paddingValues ->
             Column(

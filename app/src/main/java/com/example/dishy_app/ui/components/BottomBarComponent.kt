@@ -88,7 +88,7 @@ fun BottomBarComponent(
                 icon = Icons.Default.Person,
                 label = "Profile",
                 selected = currentRoute == "profile",
-                onClick = {  }
+                onClick = { onNavigate("profile") }
             )
 
         }

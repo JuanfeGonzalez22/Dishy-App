@@ -36,7 +36,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import androidx.compose.runtime.collectAsState
 import coil.compose.AsyncImage
-import com.example.dishy_app.ui.components.NavigationItem
+import com.example.dishy_app.ui.components.BottomBarComponent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -209,39 +209,16 @@ fun MapScreen(navController: NavController) {
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
         ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 8.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    NavigationItem(Icons.Default.Home, "Home", selected = false)
-                    NavigationItem(Icons.Default.Public, "Map", selected = true)
-                    Spacer(modifier = Modifier.width(48.dp))
-                    NavigationItem(Icons.Default.FavoriteBorder, "Saved", selected = false)
-                    NavigationItem(Icons.Default.Person, "Profile", selected = false)
+            BottomBarComponent(
+                currentRoute = "map",
+                onNavigate = { route ->
+                    navController.navigate(route) {
+                        popUpTo("home") { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
-            }
-
-            // FAB del dado
-            FloatingActionButton(
-                onClick = { navController.navigate("shake") },
-                containerColor = Color(0xFFFF4A3D),
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-28).dp)
-                    .size(56.dp)
-            ) {
-                Icon(Icons.Default.Casino, "Random", Modifier.size(28.dp))
-            }
+            )
         }
     }
 }
