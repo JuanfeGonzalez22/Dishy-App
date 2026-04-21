@@ -3,7 +3,6 @@ package com.example.dishy_app.ui.screens
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,7 +20,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -38,7 +36,9 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import androidx.compose.runtime.collectAsState
 import coil.compose.AsyncImage
+import com.example.dishy_app.ui.components.NavigationItem
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(navController: NavController) {
 
@@ -246,7 +246,6 @@ fun MapScreen(navController: NavController) {
     }
 }
 
-// ---- CARD PEQUEÑA QUE APARECE SOBRE EL MAPA ----
 @Composable
 fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
     Surface(
@@ -258,7 +257,6 @@ fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
         shadowElevation = 6.dp
     ) {
         Column {
-            // Imagen del lugar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -270,7 +268,6 @@ fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
-                // Badge POPULAR
                 Box(
                     modifier = Modifier
                         .padding(8.dp)
@@ -285,7 +282,6 @@ fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
                         fontWeight = FontWeight.Bold
                     )
                 }
-                // Rating
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -305,7 +301,6 @@ fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
                 }
             }
 
-            // Info del lugar
             Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = place.name,

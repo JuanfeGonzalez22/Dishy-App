@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.ui.components.BottomBarComponent
+import com.example.dishy_app.ui.components.VibeTag
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -205,13 +206,6 @@ fun SavedPlaceCard(place: Place) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun VibeTag(text: String) {
-    Surface(color = Color(0xFFF1F3F4), shape = RoundedCornerShape(8.dp)) {
-        Text(text, color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
     }
 }
 

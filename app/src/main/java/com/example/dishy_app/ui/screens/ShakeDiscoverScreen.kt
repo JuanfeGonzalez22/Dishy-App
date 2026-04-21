@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.dishy_app.ui.components.NavigationItem
 
 @Composable
 fun ShakeDiscoverScreen(navController: NavController) {
