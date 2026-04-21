@@ -11,6 +11,7 @@ import com.example.dishy_app.ui.screens.HomeSocialFeedScreen
 import com.example.dishy_app.ui.screens.LoginScreen
 import com.example.dishy_app.ui.screens.MapScreen
 import com.example.dishy_app.ui.screens.PlaceDetailScreen
+import com.example.dishy_app.ui.screens.ProfileScreen
 import com.example.dishy_app.ui.screens.RegisterScreen
 import com.example.dishy_app.ui.screens.SavedPlacesScreen
 import com.example.dishy_app.ui.screens.ShakeDiscoverScreen
@@ -20,7 +21,9 @@ import com.example.dishy_app.ui.screens.samplePlaces
 fun AppNavGraph(isUserLoggedIn: Boolean = false) {
     val navController = rememberNavController()
     
-    // Determinar pantalla inicial según autenticación
+    //SIEMPRE inicie en login para probar:
+    // val startDestination = "login"
+
     val startDestination = if (isUserLoggedIn) "home" else "login"
 
     NavHost(
@@ -90,6 +93,11 @@ fun AppNavGraph(isUserLoggedIn: Boolean = false) {
         // 8. Pantalla de Saved Places
         composable("saved_places") {
             SavedPlacesScreen(navController = navController)
+        }
+
+        // 9. Pantalla de perfil
+        composable("profile") {
+            ProfileScreen(navController = navController)
         }
     }
 }

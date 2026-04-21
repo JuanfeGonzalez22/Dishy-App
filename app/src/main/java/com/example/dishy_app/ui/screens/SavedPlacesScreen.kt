@@ -69,9 +69,14 @@ fun SavedPlacesScreen(navController: NavController,
             bottomBar = {
                 BottomBarComponent(
                     currentRoute = "saved_places",
-                    onNavigate = { route -> navController.navigate(route) }
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
-
             }
         ) { paddingValues ->
             Column(

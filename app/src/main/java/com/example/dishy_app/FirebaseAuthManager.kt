@@ -108,4 +108,26 @@ object FirebaseAuthManager {
         auth.signOut()
         Log.d("FirebaseAuthManager", "Sesión cerrada")
     }
+
+    // --- REGISTRO LOCAL ---
+    suspend fun signUpWithEmail(email: String, pass: String): Result<FirebaseUser> {
+        return try {
+            val result = auth.createUserWithEmailAndPassword(email, pass).await()
+            Result.success(result.user!!)
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error en registro: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    // --- LOGIN LOCAL ---
+    suspend fun signInWithEmail(email: String, pass: String): Result<FirebaseUser> {
+        return try {
+            val result = auth.signInWithEmailAndPassword(email, pass).await()
+            Result.success(result.user!!)
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error en login: ${e.message}")
+            Result.failure(e)
+        }
+    }
 }

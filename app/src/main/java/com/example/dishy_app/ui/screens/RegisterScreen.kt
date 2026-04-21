@@ -14,14 +14,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.ui.theme.DishyAppTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) {
-    // Estados para poder escribir en los campos
+    // Estados para los campos
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    
+    // Estados para la lógica de registro
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    
+    val scope = rememberCoroutineScope()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -56,6 +64,16 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
             )
 
             Spacer(modifier = Modifier.height(46.dp))
+            
+            // Mostrar error si existe
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = Color.Red,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
 
             // Campo Nombre Completo
             OutlinedTextField(
@@ -65,7 +83,8 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 placeholder = { Text("Write your full name") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(18.dp),
+                enabled = !isLoading
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -78,7 +97,8 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 placeholder = { Text("hello@dishyapp.com") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(18.dp),
+                enabled = !isLoading
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -91,7 +111,8 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 placeholder = { Text("*********") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp)
+                shape = RoundedCornerShape(18.dp),
+                enabled = !isLoading
             )
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -99,19 +120,47 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
             // Botón Principal de Registro
             Button(
                 onClick = {
-                    onNavigateToHome()
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        isLoading = true
+                        errorMessage = null
+                        scope.launch {
+                            val result = FirebaseAuthManager.signUpWithEmail(email, password)
+                            result.onSuccess { user ->
+                                // Actualizar el nombre en el perfil de Firebase
+                                val profileUpdates = com.google.firebase.auth.userProfileChangeRequest {
+                                    displayName = name
+                                }
+                                user.updateProfile(profileUpdates).addOnCompleteListener {
+                                    // Cerrar sesión para obligar a loguearse y que NavGraph detecte el cambio
+                                    FirebaseAuthManager.signOut()
+                                    isLoading = false
+                                    onNavigateToLogin()
+                                }
+                            }.onFailure { error ->
+                                isLoading = false
+                                errorMessage = error.localizedMessage ?: "Registration failed"
+                            }
+                        }
+                    } else {
+                        errorMessage = "Please fill all fields"
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(24.dp),
+                enabled = !isLoading
             ) {
-                Text(
-                    text = "Sign up",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text(
+                        text = "Sign up",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
