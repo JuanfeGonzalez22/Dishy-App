@@ -23,17 +23,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.ui.components.BottomBarComponent
 
 @Composable
 fun ProfileScreen(navController: NavController) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    // Escuchar el rol del usuario desde FirebaseAuthManager
+    val userRole by FirebaseAuthManager.userRole.collectAsState()
 
+    // Si el rol es BUSINESS, mostramos la pantalla de Business Hub
+    // Si no, mostramos la pantalla de usuario normal
+    if (userRole == "BUSINESS") {
+        RestaurantProfileScreen(navController = navController)
+    } else {
+        UserProfileScreen(navController = navController)
+    }
+}
+
+@Composable
+fun UserProfileScreen(navController: NavController) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    
     // Obtener datos del usuario real desde Firebase
     val currentUser by FirebaseAuthManager.currentUser.collectAsState()
     val userName = currentUser?.displayName ?: "User Name"
@@ -60,6 +76,7 @@ fun ProfileScreen(navController: NavController) {
                 .padding(paddingValues)
                 .background(Color(0xFFF8F8F8))
         ) {
+            // ... (Resto del código original de ProfileScreen que ahora es UserProfileScreen)
             // --- HEADER CON GRADIENTE ---
             Box(
                 modifier = Modifier
@@ -79,7 +96,7 @@ fun ProfileScreen(navController: NavController) {
 
                 // Icono de Ajustes
                 IconButton(
-                    onClick = { /* Settings */ },
+                    onClick = { navController.navigate("settings") },
                     modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
                 ) {
                     Icon(Icons.Default.Settings, contentDescription = "Settings")
@@ -105,6 +122,7 @@ fun ProfileScreen(navController: NavController) {
                                 .size(28.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFFFF4A3D))
+                                .clickable { navController.navigate("edit_profile") }
                                 .align(Alignment.BottomEnd)
                                 .border(2.dp, Color.White, CircleShape),
                             contentAlignment = Alignment.Center
@@ -130,7 +148,7 @@ fun ProfileScreen(navController: NavController) {
 
             // --- BOTÓN EDIT PROFILE ---
             Button(
-                onClick = { /* Acción */ },
+                onClick = { navController.navigate("edit_profile") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 40.dp),
@@ -205,6 +223,7 @@ fun ProfileScreen(navController: NavController) {
                             .aspectRatio(0.8f)
                             .clip(RoundedCornerShape(16.dp))
                             .background(Color(0xFFE9EEF3))
+                            .clickable { /* TODO: Implement add photo logic or navigate */ }
                             .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp)),
                         contentAlignment = Alignment.Center
                     ) {
@@ -219,10 +238,18 @@ fun ProfileScreen(navController: NavController) {
     }
 }
 
+
 @Composable
 fun StatItem(number: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = number, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF4A3D))
         Text(text = label, fontSize = 12.sp, color = Color.Gray)
     }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun ProfileScreenPreview() {
+    val navController = rememberNavController()
+    ProfileScreen(navController = navController)
 }
