@@ -1,304 +1,282 @@
 package com.example.dishy_app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
-import com.example.dishy_app.ui.components.NavigationItem
+import com.example.dishy_app.FirebaseAuthManager
+import com.example.dishy_app.ui.components.BottomBarComponent
 
-data class Restaurant(
-    val name: String,
-    val rating: Double,
-    val cuisine: String,
-    val description: String,
-    val followers: Int
-)
-
-val sampleRestaurant = Restaurant(
-    name = "La Terraza Gourmet",
-    rating = 4.8,
-    cuisine = "Fine Dining · Mediterranean",
-    description = "Experience the finest Mediterranean flavors in an upscale, vibrant atmosphere. Perfect for romantic dinners and special celebrations with a stunning terrace view.",
-    followers = 1240
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RestaurantProfileScreen() {
-    Scaffold(
-        topBar = { TopBar() },
-        bottomBar = {
-            BottomAppBar(
-                containerColor = Color.White,
-                tonalElevation = 8.dp
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    NavigationItem(Icons.Default.Home, "Home", selected = false)
-                    NavigationItem(Icons.Default.Public, "Map", selected = false)
-                    
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .offset(y = (-12).dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFF4A3D))
-                            .clickable { },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Casino,
-                            contentDescription = "Randomize",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
+fun RestaurantProfileScreen(navController: NavController) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    
+    // Obtener datos reales del usuario desde nuestro Manager
+    val currentUserName by FirebaseAuthManager.userName.collectAsState()
+    val currentUser by FirebaseAuthManager.currentUser.collectAsState()
+    
+    val businessName = currentUserName ?: "Cargando..."
+    val businessPhoto = currentUser?.photoUrl?.toString() ?: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4"
 
-                    NavigationItem(Icons.Default.FavoriteBorder, "Saved", selected = false)
-                    NavigationItem(Icons.Default.Person, "Profile", selected = false)
+    Scaffold(
+        bottomBar = {
+            BottomBarComponent(
+                currentRoute = "profile",
+                onNavigate = { route ->
+                    navController.navigate(route) {
+                        popUpTo("home") { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
-            }
+            )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(Color.White)
         ) {
-            item {
-                BannerSection()
+            // --- TOP BAR "Business Hub" ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Storefront,
+                        contentDescription = null,
+                        tint = Color(0xFFFF4A3D),
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Business Hub",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF2D2D2D)
+                    )
+                }
+                Row {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFFFF1F0),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        IconButton(onClick = { }) {
+                            Icon(Icons.AutoMirrored.Outlined.ShowChart, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(20.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFFFF1F0),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        IconButton(onClick = { }) {
+                            Icon(Icons.Default.Settings, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(20.dp))
+                        }
+                    }
+                }
             }
 
-            item {
-                RestaurantInfoSection(sampleRestaurant)
-            }
-
-            item {
-                ActionTabsBar()
-            }
-
-            // 3. Cuadrícula de fotos del restaurante (Grid de 3 columnas)
-            val photos = List(9) { "https://picsum.photos/400/400?random=$it" }
-            items(photos.chunked(3)) { rowPhotos ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    rowPhotos.forEach { photoUrl ->
+            // --- PROFILE HEADER ---
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    // Profile Image with Glow Effect
+                    Box(
+                        modifier = Modifier
+                            .size(130.dp)
+                            .padding(8.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(Color(0xFFCC9933), Color.Transparent)
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
                         AsyncImage(
-                            model = photoUrl,
-                            contentDescription = null,
+                            model = businessPhoto,
+                            contentDescription = "Restaurant Logo",
                             modifier = Modifier
-                                .weight(1f)
-                                .aspectRatio(1f),
+                                .size(110.dp)
+                                .clip(CircleShape)
+                                .border(3.dp, Color.White, CircleShape),
                             contentScale = ContentScale.Crop
                         )
                     }
-                }
-                Spacer(modifier = Modifier.height(2.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun BannerSection() {
-    Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
-        // Imagen de fondo principal
-        AsyncImage(
-            model = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4",
-            contentDescription = null,
-            modifier = Modifier.fillMaxWidth().height(200.dp),
-            contentScale = ContentScale.Crop
-        )
-
-        // Logo y Botones superpuestos
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomStart)
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            // El cuadro del Logo
-            Surface(
-                modifier = Modifier.size(100.dp),
-                shape = RoundedCornerShape(16.dp),
-                shadowElevation = 8.dp,
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(2.dp, Color.White)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Restaurant,
-                        contentDescription = null,
-                        modifier = Modifier.size(50.dp),
-                        tint = Color.LightGray
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Botones Follow y Book Table al lado del logo
-            Row(
-                modifier = Modifier.padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = { },
-                    modifier = Modifier.height(40.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF1F3F4),
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
-                ) {
-                    Text("Follow", fontWeight = FontWeight.Bold)
-                }
-                Button(
-                    onClick = { },
-                    modifier = Modifier.height(40.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF4A3D)
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
-                ) {
-                    Text("Book Table", fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RestaurantInfoSection(restaurant: Restaurant) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text(
-            text = restaurant.name,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "⭐ ${restaurant.rating}",
-                color = Color(0xFFFF4A3D),
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
-            Text(
-                text = " • ${restaurant.cuisine}",
-                color = Color.Gray,
-                fontSize = 14.sp
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = restaurant.description,
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            color = Color.Gray
-        )
-    }
-}
-
-@Composable
-fun ActionTabsBar() {
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabIcons = listOf(
-        Icons.Default.GridView,
-        Icons.Default.RestaurantMenu,
-        Icons.Default.Stars,
-        Icons.Default.Info
-    )
-
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            tabIcons.forEachIndexed { index, icon ->
-                val isSelected = selectedTab == index
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { selectedTab = index }
-                        .fillMaxHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (isSelected) Color(0xFFFF4A3D) else Color.LightGray,
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    if (isSelected) {
-                        // La línea roja indicadora
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(0.5f)
-                                .height(3.dp)
-                                .background(Color(0xFFFF4A3D))
+                    // Verified Badge
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFFF4A3D),
+                        modifier = Modifier
+                            .size(28.dp)
+                            .offset(x = (-8).dp, y = (-8).dp)
+                            .border(2.dp, Color.White, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Verified",
+                            tint = Color.White,
+                            modifier = Modifier.padding(4.dp)
                         )
-                    } else {
-                        Spacer(modifier = Modifier.height(3.dp))
+                    }
+                }
+
+                Text(
+                    text = businessName,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2D2D2D)
+                )
+                Text(
+                    text = "Fine Dining & Mediterranean Fusion",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Icon(Icons.Default.LocationOn, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
+                    Text(text = " MADRID, SPAIN", fontSize = 12.sp, color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold)
+                }
+
+                // Buttons
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = { },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Edit Profile", fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = { },
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F3F4)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("Manage Business", color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold)
                     }
                 }
             }
+
+            // --- STATS CARDS ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatCard("12.5k", "FOLLOWERS", Modifier.weight(1f))
+                StatCard("842", "TOTAL VIBES", Modifier.weight(1f))
+                StatCard("4.9 ★", "AVG RATING", Modifier.weight(1f))
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- TABS ---
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.White,
+                contentColor = Color(0xFFFF4A3D),
+                indicator = { tabPositions ->
+                    TabRowDefaults.SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = Color(0xFFFF4A3D)
+                    )
+                },
+                divider = { HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray) }
+            ) {
+                Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
+                    Text("Our Feed", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold, color = if (selectedTab == 0) Color(0xFFFF4A3D) else Color.Gray)
+                }
+                Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
+                    Text("Tagged", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold, color = if (selectedTab == 1) Color(0xFFFF4A3D) else Color.Gray)
+                }
+            }
+
+            // --- PHOTO GRID ---
+            val photos = List(9) { "https://picsum.photos/400/400?random=$it" }
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                items(photos) { photoUrl ->
+                    AsyncImage(
+                        model = photoUrl,
+                        contentDescription = null,
+                        modifier = Modifier.aspectRatio(1f),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
         }
-        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar() {
-    CenterAlignedTopAppBar(
-        title = { Text(sampleRestaurant.name, fontSize = 18.sp, fontWeight = FontWeight.Bold) },
-        navigationIcon = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-            }
-        },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.Share, contentDescription = "Share")
-            }
+fun StatCard(value: String, label: String, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFFF4A3D))
+            Text(text = label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
         }
-    )
+    }
 }
-
 
 @Preview(showBackground = true)
 @Composable
 fun RestaurantProfileScreenPreview() {
-    MaterialTheme {
-        RestaurantProfileScreen()
-    }
+    RestaurantProfileScreen(navController = rememberNavController())
 }

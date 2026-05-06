@@ -8,7 +8,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -62,153 +61,8 @@ fun MapScreen(navController: NavController) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-
-        // ---- EL MAPA ----
-        AndroidView(
-            factory = { ctx ->
-                // Configuramos osmdroid
-                Configuration.getInstance().load(
-                    ctx,
-                    ctx.getSharedPreferences("osmdroid", 0)
-                )
-
-                // Creamos el MapView
-                MapView(ctx).apply {
-                    setTileSource(TileSourceFactory.MAPNIK)
-                    setMultiTouchControls(true)
-
-                    // Centramos en Armenia, Colombia
-                    val startPoint = GeoPoint(4.5339, -75.6811)
-                    controller.setZoom(15.0)
-                    controller.setCenter(startPoint)
-
-                    // Marcadores de cada lugar
-                    val coordenadas = listOf(
-                        Triple("The Coffee Collective", 4.5339, -75.6811),
-                        Triple("Nomad Workspace", 4.5350, -75.6820),
-                        Triple("Bluebird Bistro", 4.5360, -75.6800)
-                    )
-                    coordenadas.forEach { (nombre, lat, lng) ->
-                        val marker = Marker(this)
-                        marker.position = GeoPoint(lat, lng)
-                        marker.title = nombre
-                        overlays.add(marker)
-                    }
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // ---- TOP BAR CON BUSQUEDA ----
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-        ) {
-            // Barra de busqueda
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(30.dp),
-                color = Color.White,
-                shadowElevation = 4.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Buscar",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Search Vibe",
-                        color = Color.Gray,
-                        fontSize = 15.sp
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Default.Tune,
-                        contentDescription = "Filtros",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "Notificaciones",
-                        tint = Color.Black,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            // Fila de filtros
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val filtros = listOf("Open Now", "Fast Wi-Fi", "Quiet", "Cafes", "Workspaces")
-                items(filtros) { filtro ->
-                    FilterChip(
-                        selected = selectedFilter == filtro,
-                        onClick = { selectedFilter = filtro },
-                        label = { Text(filtro, fontSize = 12.sp) },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = when (filtro) {
-                                    "Open Now" -> Icons.Default.Schedule
-                                    "Fast Wi-Fi" -> Icons.Default.Wifi
-                                    "Quiet" -> Icons.Default.VolumeOff
-                                    "Cafes" -> Icons.Default.Coffee
-                                    else -> Icons.Default.Work
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFFF4A3D),
-                            selectedLabelColor = Color.White,
-                            selectedLeadingIconColor = Color.White
-                        )
-                    )
-                }
-            }
-        }
-
-        // ---- CARDS DE LUGARES EN LA PARTE INFERIOR ----
-        LazyRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(samplePlaces) { place ->
-                PlaceMapCard(
-                    place = place,
-                    onClick = { navController.navigate("detail/${place.id}") }
-                )
-            }
-        }
-
-        // ---- BARRA DE NAVEGACION INFERIOR ----
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-        ) {
+    Scaffold(
+        bottomBar = {
             BottomBarComponent(
                 currentRoute = "map",
                 onNavigate = { route ->
@@ -219,6 +73,150 @@ fun MapScreen(navController: NavController) {
                     }
                 }
             )
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
+
+            // ---- EL MAPA ----
+            AndroidView(
+                factory = { ctx ->
+                    // Configuramos osmdroid
+                    Configuration.getInstance().load(
+                        ctx,
+                        ctx.getSharedPreferences("osmdroid", 0)
+                    )
+
+                    // Creamos el MapView
+                    MapView(ctx).apply {
+                        setTileSource(TileSourceFactory.MAPNIK)
+                        setMultiTouchControls(true)
+
+                        // Centramos en Armenia, Colombia
+                        val startPoint = GeoPoint(4.5339, -75.6811)
+                        controller.setZoom(15.0)
+                        controller.setCenter(startPoint)
+
+                        // Marcadores de cada lugar
+                        val coordenadas = listOf(
+                            Triple("The Coffee Collective", 4.5339, -75.6811),
+                            Triple("Nomad Workspace", 4.5350, -75.6820),
+                            Triple("Bluebird Bistro", 4.5360, -75.6800)
+                        )
+                        coordenadas.forEach { (nombre, lat, lng) ->
+                            val marker = Marker(this)
+                            marker.position = GeoPoint(lat, lng)
+                            marker.title = nombre
+                            overlays.add(marker)
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // ---- TOP BAR CON BUSQUEDA ----
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+            ) {
+                // Barra de busqueda
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    shape = RoundedCornerShape(30.dp),
+                    color = Color.White,
+                    shadowElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Buscar",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Search Vibe",
+                            color = Color.Gray,
+                            fontSize = 15.sp
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = "Filtros",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notificaciones",
+                            tint = Color.Black,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // Fila de filtros
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val filtros = listOf("Open Now", "Fast Wi-Fi", "Quiet", "Cafes", "Workspaces")
+                    items(filtros) { filtro ->
+                        FilterChip(
+                            selected = selectedFilter == filtro,
+                            onClick = { selectedFilter = filtro },
+                            label = { Text(filtro, fontSize = 12.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = when (filtro) {
+                                        "Open Now" -> Icons.Default.Schedule
+                                        "Fast Wi-Fi" -> Icons.Default.Wifi
+                                        "Quiet" -> Icons.Default.VolumeOff
+                                        "Cafes" -> Icons.Default.Coffee
+                                        else -> Icons.Default.Work
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFFFF4A3D),
+                                selectedLabelColor = Color.White,
+                                selectedLeadingIconColor = Color.White
+                            )
+                        )
+                    }
+                }
+            }
+
+            // ---- CARDS DE LUGARES EN LA PARTE INFERIOR ----
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(samplePlaces) { place ->
+                    PlaceMapCard(
+                        place = place,
+                        onClick = { navController.navigate("detail/${place.id}") }
+                    )
+                }
+            }
         }
     }
 }

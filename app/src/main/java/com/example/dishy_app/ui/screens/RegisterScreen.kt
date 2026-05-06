@@ -1,8 +1,11 @@
 package com.example.dishy_app.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,18 +21,23 @@ import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.ui.theme.DishyAppTheme
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) {
     // Estados para los campos
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    
+
+    // ESTADO PARA EL ROL (Por defecto Usuario/Comensal)
+    var isBusiness by remember { mutableStateOf(false) }
+
     // Estados para la lógica de registro
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    
+
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -38,11 +46,12 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            Spacer(modifier = Modifier.height(88.dp))
+            Spacer(modifier = Modifier.height(60.dp))
 
             Text(
                 text = "Create Account",
@@ -63,8 +72,51 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(46.dp))
-            
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- SELECTOR DE ROL (NATURAL) ---
+            Text(
+                text = "I want to use Dishy as:",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = !isBusiness,
+                    onClick = { isBusiness = false },
+                    label = { Text("Customer") },
+                    leadingIcon = if (!isBusiness) {
+                        { Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp)) }
+                    } else null,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFFF4A3D).copy(alpha = 0.1f),
+                        selectedLabelColor = Color(0xFFFF4A3D)
+                    )
+                )
+
+                FilterChip(
+                    selected = isBusiness,
+                    onClick = { isBusiness = true },
+                    label = { Text("Business / Café") },
+                    leadingIcon = if (isBusiness) {
+                        { Icon(Icons.Default.Check, null, modifier = Modifier.size(18.dp)) }
+                    } else null,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFFFF4A3D).copy(alpha = 0.1f),
+                        selectedLabelColor = Color(0xFFFF4A3D)
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Mostrar error si existe
             if (errorMessage != null) {
                 Text(
@@ -87,7 +139,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 enabled = !isLoading
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Campo Email
             OutlinedTextField(
@@ -101,7 +153,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 enabled = !isLoading
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Campo Contraseña
             OutlinedTextField(
@@ -120,22 +172,15 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
             // Botón Principal de Registro
             Button(
                 onClick = {
-                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                    if (email.isNotEmpty() && password.isNotEmpty() && name.isNotEmpty()) {
                         isLoading = true
                         errorMessage = null
                         scope.launch {
-                            val result = FirebaseAuthManager.signUpWithEmail(email, password)
-                            result.onSuccess { user ->
-                                // Actualizar el nombre en el perfil de Firebase
-                                val profileUpdates = com.google.firebase.auth.userProfileChangeRequest {
-                                    displayName = name
-                                }
-                                user.updateProfile(profileUpdates).addOnCompleteListener {
-                                    // Cerrar sesión para obligar a loguearse y que NavGraph detecte el cambio
-                                    FirebaseAuthManager.signOut()
-                                    isLoading = false
-                                    onNavigateToLogin()
-                                }
+                            // Enviamos name e isBusiness al Manager
+                            val result = FirebaseAuthManager.signUpWithEmail(email, password, name, isBusiness)
+                            result.onSuccess {
+                                isLoading = false
+                                onNavigateToLogin() // Redirigir al login tras éxito
                             }.onFailure { error ->
                                 isLoading = false
                                 errorMessage = error.localizedMessage ?: "Registration failed"
@@ -170,31 +215,25 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = Color.LightGray
-                )
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
                 Text(
                     text = "Or continue with",
                     modifier = Modifier.padding(horizontal = 16.dp),
                     color = Color.Gray,
                     fontSize = 14.sp
                 )
-                HorizontalDivider(
-                    modifier = Modifier.weight(1f),
-                    color = Color.LightGray
-                )
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botones de Redes Sociales (Google y Apple)
+            // Botones de Redes Sociales
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
-                    onClick = { },
+                    onClick = { /* Implementar Google Logic si aplica */ },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -219,7 +258,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit, onNavigateToHome: () -> Unit) 
 
             // Volver al Login
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {

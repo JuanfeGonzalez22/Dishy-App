@@ -7,8 +7,8 @@ data class Place(
     val distance: String,
     val rating: Double,
     val reviews: Int,
-    val imageUrl: String,       
-    val communityPhotos: List<String> 
+    val imageUrl: String,
+    val communityPhotos: List<String>
 )
 
 val samplePlaces = listOf(
