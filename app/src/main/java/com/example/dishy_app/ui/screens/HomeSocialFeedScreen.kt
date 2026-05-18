@@ -6,9 +6,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,58 +27,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.dishy_app.FirebaseAuthManager
+import com.example.dishy_app.data.model.Place
+import com.example.dishy_app.data.model.DishyPost
 import com.example.dishy_app.ui.components.BottomBarComponent
-
-data class Place(
-    val id: Int,
-    val name: String,
-    val description: String,
-    val distance: String,
-    val rating: Double,
-    val reviews: Int,
-    val imageUrl: String,       
-    val communityPhotos: List<String> 
-)
-
-val samplePlaces = listOf(
-    Place(
-        id = 1,
-        name = "The Coffee Collective",
-        description = "Cozy & Quiet",
-        distance = "0.5 mi",
-        rating = 4.8,
-        reviews = 128,
-        imageUrl = "https://images.unsplash.com/photo-1509042239860-f550ce710b93",
-        communityPhotos = listOf("https://picsum.photos/200", "https://picsum.photos/201")
-    ),
-    Place(
-        id = 2,
-        name = "Nomad Workspace",
-        description = "Productive",
-        distance = "1.2 mi",
-        rating = 4.9,
-        reviews = 342,
-        imageUrl = "https://images.unsplash.com/photo-1497366216548-37526070297c",
-        communityPhotos = listOf("https://picsum.photos/202", "https://picsum.photos/203")
-    ),
-    Place(
-        id = 3,
-        name = "Bluebird Bistro",
-        description = "Romantic",
-        distance = "2.8 mi",
-        rating = 4.6,
-        reviews = 89,
-        imageUrl = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4",
-        communityPhotos = listOf("https://picsum.photos/204", "https://picsum.photos/205")
-    )
-)
+import com.example.dishy_app.ui.viewModel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeSocialFeedScreen(navController: androidx.navigation.NavController) {
+fun HomeSocialFeedScreen(
+    navController: androidx.navigation.NavController,
+    viewModel: HomeViewModel = viewModel()
+) {
     var selectedFilter by remember { mutableStateOf("All") }
+    val places = viewModel.places
+    val posts = viewModel.posts // Obtenemos los posts del ViewModel
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -99,6 +70,9 @@ fun HomeSocialFeedScreen(navController: androidx.navigation.NavController) {
                         IconButton(onClick = { }) {
                             Icon(Icons.Default.Notifications, "Notifications", tint = Color.Black)
                         }
+                        IconButton(onClick = { FirebaseAuthManager.signOut() }) {
+                            Icon(Icons.AutoMirrored.Filled.Logout, "Cerrar sesión", tint = Color.Black)
+                        }
                     },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background
@@ -108,9 +82,14 @@ fun HomeSocialFeedScreen(navController: androidx.navigation.NavController) {
             bottomBar = {
                 BottomBarComponent(
                     currentRoute = "home",
-                    onNavigate = { route -> navController.navigate(route) }
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
-
             }
         ) { paddingValues ->
             Column(
@@ -118,11 +97,12 @@ fun HomeSocialFeedScreen(navController: androidx.navigation.NavController) {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
+                // SECCIÓN DE FILTROS (Agregamos "For you")
                 LazyRow(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val filtros = listOf("All", "Cafes", "Restaurants", "Workspaces", "Bars")
+                    val filtros = listOf("All", "For you", "Cafes", "Restaurants", "Workspaces", "Bars")
                     items(filtros) { filtro ->
                         FilterChip(
                             selected = selectedFilter == filtro,
@@ -136,19 +116,67 @@ fun HomeSocialFeedScreen(navController: androidx.navigation.NavController) {
                     }
                 }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp) 
-                ) {
-                    items(samplePlaces) { place ->
-                        PlaceCard(
-                            place = place,
-                            onClick = { navController.navigate("detail/${place.id}") }
-                        )
+                // CONTENIDO DINÁMICO
+                if (selectedFilter == "For you") {
+                    // Feed estilo Instagram (Fotos)
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        verticalItemSpacing = 4.dp,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(posts) { post ->
+                            StaggeredVibeCard(
+                                post = post,
+                                onClick = { navController.navigate("post_detail/${post.id}") }
+                            )
+                        }
+                    }
+                } else {
+                    // Lista de Restaurantes
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(places) { place ->
+                            PlaceCard(
+                                place = place,
+                                onClick = { navController.navigate("detail/${place.id}") }
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun StaggeredVibeCard(post: DishyPost, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+    ) {
+        AsyncImage(
+            model = post.imageUrl,
+            contentDescription = post.placeName,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Indicador de Vibe (Icono pequeño)
+        Icon(
+            imageVector = if (post.vibeSpecs.wifiSpeed == "High Speed") Icons.Default.Wifi else Icons.Default.Bolt,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.8f),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp)
+                .size(16.dp)
+        )
     }
 }
 
@@ -185,7 +213,7 @@ fun PlaceCard(place: Place, onClick: () -> Unit = {}) {
         ) {
             Text(place.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(place.description, fontSize = 13.sp, color = Color.LightGray)
+                Text(place.description, fontSize = 13.sp, color = Color.LightGray, maxLines = 1)
                 Spacer(Modifier.width(12.dp))
                 Icon(Icons.Default.LocationOn, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
                 Text(place.distance, fontSize = 13.sp, color = Color.LightGray)
@@ -202,27 +230,8 @@ fun PlaceCard(place: Place, onClick: () -> Unit = {}) {
                 .background(Color(0xFFFF4A3D)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.ArrowForward, "Ver más", tint = Color.White, modifier = Modifier.size(18.dp))
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, "Ver más", tint = Color.White, modifier = Modifier.size(18.dp))
         }
-    }
-}
-
-@Composable
-fun NavigationItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector, 
-    label: String, 
-    selected: Boolean,
-    onClick: () -> Unit = {}
-) {
-    val color = if (selected) Color(0xFFFF4A3D) else Color.Gray
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clickable { onClick() }
-            .padding(top = 8.dp)
-    ) {
-        Icon(icon, label, tint = color, modifier = Modifier.size(24.dp))
-        Text(label, fontSize = 10.sp, color = color)
     }
 }
 

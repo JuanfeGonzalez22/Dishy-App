@@ -159,10 +159,11 @@ fun LoginScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(46.dp))
+                // Se redujo el espacio de 46.dp a 12.dp para subir el texto de Sign Up
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
