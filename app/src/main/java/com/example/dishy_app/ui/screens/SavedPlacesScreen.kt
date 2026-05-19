@@ -21,17 +21,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.dishy_app.data.model.Place
 import com.example.dishy_app.ui.components.BottomBarComponent
+import com.example.dishy_app.ui.viewModel.SavedPlacesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SavedPlacesScreen(navController: NavController,
-                      ) {
-
+fun SavedPlacesScreen(
+    navController: NavController,
+    viewModel: SavedPlacesViewModel = viewModel()
+) {
     var selectedTab by remember { mutableStateOf("Want to Go") }
+    val savedPlaces = viewModel.savedPlaces
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -48,19 +53,13 @@ fun SavedPlacesScreen(navController: NavController,
                         )
                     },
                     navigationIcon = {
-                        IconButton(
-                            onClick = { navController.popBackStack() }) {
-                            Icon(
-                                Icons.Default.ArrowBack,
-                                contentDescription = "Back")
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                         }
                     },
                     actions = {
-                        IconButton(
-                            onClick = { }) {
-                            Icon(
-                                Icons.Default.Search,
-                                contentDescription = "Search")
+                        IconButton(onClick = { }) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
                         }
                     }
                 )
@@ -70,7 +69,6 @@ fun SavedPlacesScreen(navController: NavController,
                     currentRoute = "saved_places",
                     onNavigate = { route -> navController.navigate(route) }
                 )
-
             }
         ) { paddingValues ->
             Column(
@@ -88,22 +86,21 @@ fun SavedPlacesScreen(navController: NavController,
                         .fillMaxWidth()
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Your Collection",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold)
-                    Text("2 places",
-                        color = Color.Gray,
-                        fontSize = 12.sp)
+                    Text("Your Collection", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("${savedPlaces.size} places", color = Color.Gray, fontSize = 12.sp)
                 }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(samplePlaces) { place ->
-                        SavedPlaceCard(place = place)
+                    items(savedPlaces) { place ->
+                        SavedPlaceCard(
+                            place = place,
+                            onClick = { navController.navigate("detail/${place.id}") }
+                        )
                     }
                 }
             }
@@ -145,26 +142,24 @@ fun TabSelector(selectedTab: String, onTabSelected: (String) -> Unit) {
 }
 
 @Composable
-fun SavedPlaceCard(place: Place) {
+fun SavedPlaceCard(place: Place, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().height(180.dp)) {
                 AsyncImage(
                     model = place.imageUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
-                // Botón Corazón Rojo
                 Surface(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -175,7 +170,6 @@ fun SavedPlaceCard(place: Place) {
                 ) {
                     Icon(Icons.Default.Favorite, null, tint = Color.Red, modifier = Modifier.padding(6.dp))
                 }
-                // Rating flotante
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
@@ -191,10 +185,10 @@ fun SavedPlaceCard(place: Place) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(place.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Surface(color = Color(0xFFFFEBEE), shape = RoundedCornerShape(8.dp)) {
-                        Text("Cafe", color = Color(0xFFFF4A3D), fontSize = 10.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                        Text(place.category, color = Color(0xFFFF4A3D), fontSize = 10.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
                     }
                 }
-                Text(place.description, color = Color.Gray, fontSize = 13.sp)
+                Text(place.description, color = Color.Gray, fontSize = 13.sp, maxLines = 2)
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -212,13 +206,5 @@ fun SavedPlaceCard(place: Place) {
 fun VibeTag(text: String) {
     Surface(color = Color(0xFFF1F3F4), shape = RoundedCornerShape(8.dp)) {
         Text(text, color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SavedPlacesPreview() {
-    MaterialTheme {
-        SavedPlacesScreen(navController = rememberNavController())
     }
 }

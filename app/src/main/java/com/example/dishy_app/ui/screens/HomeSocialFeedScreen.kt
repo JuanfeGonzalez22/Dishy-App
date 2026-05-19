@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -24,11 +23,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.data.model.Place
@@ -44,7 +41,8 @@ fun HomeSocialFeedScreen(
 ) {
     var selectedFilter by remember { mutableStateOf("All") }
     val places = viewModel.places
-    val posts = viewModel.posts // Obtenemos los posts del ViewModel
+    val posts = viewModel.posts
+    val isLoading = viewModel.isLoading
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -71,79 +69,69 @@ fun HomeSocialFeedScreen(
                             Icon(Icons.Default.Notifications, "Notifications", tint = Color.Black)
                         }
                         IconButton(onClick = { FirebaseAuthManager.signOut() }) {
-                            Icon(Icons.AutoMirrored.Filled.Logout, "Cerrar sesión", tint = Color.Black)
+                            Icon(Icons.AutoMirrored.Filled.Logout, "Logout", tint = Color.Black)
                         }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    )
+                    }
                 )
             },
             bottomBar = {
                 BottomBarComponent(
                     currentRoute = "home",
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo("home") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    onNavigate = { route -> navController.navigate(route) }
                 )
             }
         ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                // SECCIÓN DE FILTROS (Agregamos "For you")
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val filtros = listOf("All", "For you", "Cafes", "Restaurants", "Workspaces", "Bars")
-                    items(filtros) { filtro ->
-                        FilterChip(
-                            selected = selectedFilter == filtro,
-                            onClick = { selectedFilter = filtro },
-                            label = { Text(filtro) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color.Black,
-                                selectedLabelColor = Color.White
-                            )
-                        )
-                    }
+            if (isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFFF4A3D))
                 }
-
-                // CONTENIDO DINÁMICO
-                if (selectedFilter == "For you") {
-                    // Feed estilo Instagram (Fotos)
-                    LazyVerticalStaggeredGrid(
-                        columns = StaggeredGridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalItemSpacing = 4.dp,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    // SECCIÓN DE FILTROS
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(posts) { post ->
-                            StaggeredVibeCard(
-                                post = post,
-                                onClick = { navController.navigate("post_detail/${post.id}") }
+                        val filtros = listOf("All", "For you", "Cafes", "Restaurants", "Workspaces")
+                        items(filtros) { filtro ->
+                            FilterChip(
+                                selected = selectedFilter == filtro,
+                                onClick = { selectedFilter = filtro },
+                                label = { Text(filtro) }
                             )
                         }
                     }
-                } else {
-                    // Lista de Restaurantes
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 16.dp)
-                    ) {
-                        items(places) { place ->
-                            PlaceCard(
-                                place = place,
-                                onClick = { navController.navigate("detail/${place.id}") }
-                            )
+
+                    if (selectedFilter == "For you") {
+                        LazyVerticalStaggeredGrid(
+                            columns = StaggeredGridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp),
+                            verticalItemSpacing = 4.dp,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(posts) { post ->
+                                StaggeredVibeCard(
+                                    post = post,
+                                    onClick = { /* Navegar a detalle de post si existe */ }
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(places) { place ->
+                                PlaceCard(
+                                    place = place,
+                                    onClick = { navController.navigate("detail/${place.id}") }
+                                )
+                            }
                         }
                     }
                 }
@@ -162,26 +150,15 @@ fun StaggeredVibeCard(post: DishyPost, onClick: () -> Unit) {
     ) {
         AsyncImage(
             model = post.imageUrl,
-            contentDescription = post.placeName,
+            contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxWidth()
-        )
-
-        // Indicador de Vibe (Icono pequeño)
-        Icon(
-            imageVector = if (post.vibeSpecs.wifiSpeed == "High Speed") Icons.Default.Wifi else Icons.Default.Bolt,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.8f),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
-                .size(16.dp)
         )
     }
 }
 
 @Composable
-fun PlaceCard(place: Place, onClick: () -> Unit = {}) {
+fun PlaceCard(place: Place, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -192,53 +169,20 @@ fun PlaceCard(place: Place, onClick: () -> Unit = {}) {
     ) {
         AsyncImage(
             model = place.imageUrl,
-            contentDescription = place.name,
+            contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0xCC000000)),
-                        startY = 100f
-                    )
-                )
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.7f))))
         )
-
         Column(
             modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)
         ) {
             Text(place.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(place.description, fontSize = 13.sp, color = Color.LightGray, maxLines = 1)
-                Spacer(Modifier.width(12.dp))
-                Icon(Icons.Default.LocationOn, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
-                Text(place.distance, fontSize = 13.sp, color = Color.LightGray)
-            }
-            Text("⭐ ${place.rating} (${place.reviews} reviews)", fontSize = 12.sp, color = Color.LightGray)
+            Text(place.category, fontSize = 14.sp, color = Color.LightGray)
         }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFFF4A3D)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, "Ver más", tint = Color.White, modifier = Modifier.size(18.dp))
-        }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun HomeScreenPreview() {
-    MaterialTheme {
-        HomeSocialFeedScreen(navController = rememberNavController())
     }
 }

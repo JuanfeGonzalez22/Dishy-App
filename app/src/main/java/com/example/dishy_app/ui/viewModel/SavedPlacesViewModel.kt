@@ -4,13 +4,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.dishy_app.data.model.Place
 import com.example.dishy_app.data.repository.PlaceRepository
+import kotlinx.coroutines.launch
 
 class SavedPlacesViewModel : ViewModel() {
     private val repository = PlaceRepository()
 
-    // Por ahora mostramos todos los lugares como "guardados" para probar la UI
     var savedPlaces by mutableStateOf<List<Place>>(emptyList())
         private set
 
@@ -19,6 +20,9 @@ class SavedPlacesViewModel : ViewModel() {
     }
 
     private fun loadSavedPlaces() {
-        savedPlaces = repository.getAllPlaces()
+        viewModelScope.launch {
+            // Por ahora, para probar la nube, traemos todos los lugares
+            savedPlaces = repository.getAllPlaces()
+        }
     }
 }

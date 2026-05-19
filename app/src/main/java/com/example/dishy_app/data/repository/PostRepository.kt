@@ -1,35 +1,34 @@
 package com.example.dishy_app.data.repository
 
 import com.example.dishy_app.data.model.DishyPost
-import com.example.dishy_app.data.model.VibeSpecs
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.tasks.await
 
 class PostRepository {
-    private val samplePosts = listOf(
-        DishyPost(
-            id = "1",
-            userName = "Erick Sebastian",
-            placeName = "La Parrilla de Juan",
-            imageUrl = "https://images.unsplash.com/photo-1544025162-d76694265947",
-            description = "Increíble asado, ¡el ambiente es 10/10!",
-            vibeSpecs = VibeSpecs(wifiSpeed = "High Speed", noiseLevel = "Low", plugsAvailable = true)
-        ),
-        DishyPost(
-            id = "2",
-            userName = "Maria Garcia",
-            placeName = "Sushi Master",
-            imageUrl = "https://images.unsplash.com/photo-1579871494447-9811cf80d66c",
-            description = "El mejor sushi de la zona. Muy recomendado.",
-            vibeSpecs = VibeSpecs(wifiSpeed = "Medium", noiseLevel = "Medium", plugsAvailable = false)
-        ),
-        DishyPost(
-            id = "3",
-            userName = "Carlos Perez",
-            placeName = "Café del Bosque",
-            imageUrl = "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb",
-            description = "Perfecto para trabajar un rato.",
-            vibeSpecs = VibeSpecs(wifiSpeed = "High Speed", noiseLevel = "Low", plugsAvailable = true)
-        )
-    )
+    private val db = FirebaseFirestore.getInstance()
+    private val postsCollection = db.collection("posts")
 
-    fun getAllPosts(): List<DishyPost> = samplePosts
+    // Obtiene todos los posts desde Firestore, ordenados por fecha
+    suspend fun getAllPosts(): List<DishyPost> {
+        return try {
+            val snapshot = postsCollection
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            snapshot.toObjects(DishyPost::class.java)
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    // Función para crear un nuevo post en Firebase
+    suspend fun createPost(post: DishyPost): Boolean {
+        return try {
+            postsCollection.add(post).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
