@@ -1,7 +1,8 @@
 package com.example.dishy_app.ui.screens
 
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,23 +18,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.FirebaseAuthManager
+import com.example.dishy_app.ui.viewModel.CreatePostViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreatePostScreen(imageUri: String?, navController: NavController) {
+fun CreatePostScreen(
+    imageUri: String?, 
+    navController: NavController,
+    viewModel: CreatePostViewModel = viewModel()
+) {
     var caption by remember { mutableStateOf("") }
     var selectedWifi by remember { mutableStateOf("Average") }
     var selectedComfort by remember { mutableStateOf("Lounge") }
     var selectedNoise by remember { mutableStateOf("Silent") }
     
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val currentUser by FirebaseAuthManager.currentUser.collectAsState()
     val userPhoto = currentUser?.photoUrl?.toString() ?: "https://i.pravatar.cc/150"
 
@@ -47,11 +56,39 @@ fun CreatePostScreen(imageUri: String?, navController: NavController) {
                     }
                 },
                 actions = {
-                    TextButton(onClick = { 
-                        // Aquí iría la lógica para subir a Firebase
-                        navController.popBackStack()
-                    }) {
-                        Text("Share", color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    if (viewModel.isUploading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp).padding(end = 16.dp),
+                            color = Color(0xFFFF4A3D),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        TextButton(onClick = { 
+                            if (!imageUri.isNullOrBlank()) {
+                                scope.launch {
+                                    viewModel.uploadAndCreatePost(
+                                        imageUri = Uri.parse(imageUri),
+                                        caption = caption,
+                                        wifi = selectedWifi,
+                                        comfort = selectedComfort,
+                                        noise = selectedNoise,
+                                        onSuccess = {
+                                            Toast.makeText(context, "Post shared successfully!", Toast.LENGTH_SHORT).show()
+                                            navController.navigate("home") {
+                                                popUpTo("home") { inclusive = true }
+                                            }
+                                        },
+                                        onError = { error ->
+                                            Toast.makeText(context, "Error: $error", Toast.LENGTH_LONG).show()
+                                        }
+                                    )
+                                }
+                            } else {
+                                Toast.makeText(context, "Error: No image URI found", Toast.LENGTH_SHORT).show()
+                            }
+                        }) {
+                            Text("Share", color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        }
                     }
                 }
             )
@@ -64,7 +101,7 @@ fun CreatePostScreen(imageUri: String?, navController: NavController) {
                 .verticalScroll(rememberScrollState())
                 .background(Color(0xFFFBFBFB))
         ) {
-            // Previsualización de Imagen
+            // Preview de Imagen
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -74,19 +111,11 @@ fun CreatePostScreen(imageUri: String?, navController: NavController) {
                     .background(Color.LightGray)
             ) {
                 AsyncImage(
-                    model = imageUri ?: "https://images.unsplash.com/photo-1554118811-1e0d58224f24",
+                    model = imageUri,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                
-                Surface(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
-                    shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.5f)
-                ) {
-                    Icon(Icons.Default.Edit, null, tint = Color.White, modifier = Modifier.padding(8.dp).size(16.dp))
-                }
             }
 
             // Caption
@@ -109,22 +138,15 @@ fun CreatePostScreen(imageUri: String?, navController: NavController) {
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
+                        unfocusedIndicatorColor = Color.Transparent
                     )
                 )
             }
             
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp)
 
-            // SECCIÓN VIBE SPECIFICS
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Assessment, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Vibe Specifics", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
+            Text("Vibe Specifics", fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
 
             VibeSelectorGroup(
                 title = "Wi-Fi Speed",
@@ -147,39 +169,13 @@ fun CreatePostScreen(imageUri: String?, navController: NavController) {
                 onSelect = { selectedNoise = it }
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
-            
-            // Add Location
-            Surface(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White,
-                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.LightGray)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.LocationOn, null, tint = Color(0xFFFF4A3D))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("Add Location", fontWeight = FontWeight.Medium, color = Color.DarkGray)
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(Icons.Default.ChevronRight, null, tint = Color.Gray)
-                }
-            }
-            
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
 
 @Composable
-fun VibeSelectorGroup(
-    title: String,
-    options: List<String>,
-    selected: String,
-    onSelect: (String) -> Unit
-) {
+fun VibeSelectorGroup(title: String, options: List<String>, selected: String, onSelect: (String) -> Unit) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Text(text = title, fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
@@ -190,12 +186,9 @@ fun VibeSelectorGroup(
             options.forEach { option ->
                 val isSelected = selected == option
                 Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onSelect(option) },
+                    modifier = Modifier.weight(1f).clickable { onSelect(option) },
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isSelected) Color(0xFFFF4A3D) else Color(0xFFF1F3F4),
-                    border = if (isSelected) null else androidx.compose.foundation.BorderStroke(0.5.dp, Color.LightGray)
+                    color = if (isSelected) Color(0xFFFF4A3D) else Color(0xFFF1F3F4)
                 ) {
                     Text(
                         text = option,
@@ -209,10 +202,4 @@ fun VibeSelectorGroup(
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CreatePostScreenPreview() {
-    CreatePostScreen(imageUri = null, navController = rememberNavController())
 }

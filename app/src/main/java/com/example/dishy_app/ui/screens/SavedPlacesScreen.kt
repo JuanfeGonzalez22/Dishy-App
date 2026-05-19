@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,7 +29,6 @@ import coil.compose.AsyncImage
 import com.example.dishy_app.data.model.Place
 import com.example.dishy_app.ui.components.BottomBarComponent
 import com.example.dishy_app.ui.viewModel.SavedPlacesViewModel
-import com.example.dishy_app.ui.components.VibeTag
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,76 +39,80 @@ fun SavedPlacesScreen(
     var selectedTab by remember { mutableStateOf("Want to Go") }
     val savedPlaces = viewModel.savedPlaces
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = "Saved Places",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        }
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Saved Places",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                )
-            },
-            bottomBar = {
-                BottomBarComponent(
-                    currentRoute = "saved_places",
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo("home") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
+                },
+                actions = {
+                    IconButton(onClick = { /* Lógica de búsqueda */ }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
                     }
-                )
-            }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                TabSelector(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    Text("Your Collection",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold)
-                    Text("2 places",
-                        color = Color.Gray,
-                        fontSize = 12.sp)
                 }
+            )
+        },
+        bottomBar = {
+            BottomBarComponent(
+                currentRoute = "saved_places",
+                onNavigate = { route ->
+                    navController.navigate(route) {
+                        popUpTo("home") { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            TabSelector(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
 
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text("Your Collection",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold)
+                Text("${savedPlaces.size} places",
+                    color = Color.Gray,
+                    fontSize = 12.sp)
+            }
+
+            if (savedPlaces.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No places saved yet", color = Color.Gray)
+                }
+            } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(samplePlaces) { place ->
-                        SavedPlaceCard(place = place)
+                    items(savedPlaces) { place ->
+                        SavedPlaceCard(
+                            place = place,
+                            onClick = { navController.navigate("detail/${place.id}") }
+                        )
                     }
                 }
             }
@@ -203,7 +207,6 @@ fun SavedPlaceCard(place: Place, onClick: () -> Unit) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     VibeTag("Laptop Friendly")
                     VibeTag("Quiet")
-                    VibeTag("$$")
                 }
             }
         }

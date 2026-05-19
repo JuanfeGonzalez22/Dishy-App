@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.dishy_app"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -60,6 +60,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-storage")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     // Google Sign In & Credentials (Rutas directas seguras)
@@ -74,6 +75,9 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.3.3")
     implementation("androidx.camera:camera-view:1.3.3")
     implementation("androidx.camera:camera-extensions:1.3.3")
+
+    // Maps
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 
     // Utils
     implementation("io.coil-kt:coil-compose:2.6.0")

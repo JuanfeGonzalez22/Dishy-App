@@ -25,7 +25,6 @@ object FirebaseAuthManager {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
-    // Especificamos el tipo explícitamente para evitar errores de compilación
     private val _currentUser = MutableStateFlow<FirebaseUser?>(auth.currentUser)
     val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
 
@@ -44,8 +43,15 @@ object FirebaseAuthManager {
             if (user != null) {
                 scope.launch {
                     val userData = getUserData(user.uid)
-                    _userRole.value = userData["role"] as? String ?: "USER"
-                    _userName.value = userData["name"] as? String ?: user.displayName
+                    
+                    // --- ADMIN QUEMADO ---
+                    if (user.email == "admin@dishy.app") {
+                        _userRole.value = "ADMIN"
+                        _userName.value = "Super Admin"
+                    } else {
+                        _userRole.value = userData["role"] as? String ?: "USER"
+                        _userName.value = userData["name"] as? String ?: user.displayName
+                    }
                 }
             } else {
                 _userRole.value = null

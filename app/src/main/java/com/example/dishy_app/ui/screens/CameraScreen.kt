@@ -1,8 +1,11 @@
 package com.example.dishy_app.ui.screens
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -33,10 +36,8 @@ import androidx.navigation.NavController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
-import java.util.concurrent.Executor
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -58,12 +59,6 @@ fun CameraScreen(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D))
             ) {
                 Text("Grant Permission")
-            }
-            // Opción para simulador: Saltar directamente
-            TextButton(onClick = { 
-                navController.navigate("create_post?imageUri=https://images.unsplash.com/photo-1554118811-1e0d58224f24") 
-            }) {
-                Text("Skip (Simulator Mode)", color = Color.Gray)
             }
         }
     }
@@ -100,51 +95,33 @@ private fun CameraPreviewContent(navController: NavController) {
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(
-            factory = { previewView },
-            modifier = Modifier.fillMaxSize()
-        )
+        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 
-        // UI de la cámara
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
-                .align(Alignment.TopCenter),
+            modifier = Modifier.fillMaxWidth().padding(24.dp).align(Alignment.TopCenter),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             IconButton(onClick = { navController.popBackStack() }) {
                 Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
             }
-            IconButton(onClick = { /* Toggle Flash */ }) {
-                Icon(Icons.Default.FlashOn, contentDescription = "Flash", tint = Color.White)
-            }
         }
 
-        // Botones inferiores
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 48.dp)
-                .align(Alignment.BottomCenter),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 48.dp).align(Alignment.BottomCenter),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Galería
-            IconButton(
-                onClick = { /* Abrir galería */ },
-                modifier = Modifier.size(50.dp).background(Color.Black.copy(0.4f), CircleShape)
-            ) {
+            IconButton(onClick = { /* Gallery */ }) {
                 Icon(Icons.Default.PhotoLibrary, contentDescription = "Gallery", tint = Color.White)
             }
 
-            // Botón de Disparo
+            // BOTÓN DE DISPARO
             Surface(
                 modifier = Modifier
                     .size(80.dp)
                     .clickable {
-                        takePhoto(imageCapture, context) { uri ->
-                            navController.navigate("create_post?imageUri=${uri}")
+                        takePhotoAndSaveToGallery(imageCapture, context) { uri ->
+                            navController.navigate("create_post?imageUri=${Uri.encode(uri.toString())}")
                         }
                     },
                 shape = CircleShape,
@@ -154,35 +131,37 @@ private fun CameraPreviewContent(navController: NavController) {
                 Box(modifier = Modifier.padding(4.dp).background(Color.White, CircleShape))
             }
 
-            // Cambiar Cámara
-            IconButton(
-                onClick = { /* Switch camera */ },
-                modifier = Modifier.size(50.dp).background(Color.Black.copy(0.4f), CircleShape)
-            ) {
-                Icon(Icons.Default.Sync, contentDescription = "Switch Camera", tint = Color.White)
+            IconButton(onClick = { /* Switch */ }) {
+                Icon(Icons.Default.Sync, contentDescription = "Switch", tint = Color.White)
             }
         }
     }
 }
 
-private fun takePhoto(
+private fun takePhotoAndSaveToGallery(
     imageCapture: ImageCapture,
     context: Context,
-    onImageCaptured: (String) -> Unit
+    onImageCaptured: (Uri) -> Unit
 ) {
-    val photoFile = File(
-        context.externalCacheDir,
-        SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(System.currentTimeMillis()) + ".jpg"
-    )
+    val name = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS", Locale.US).format(System.currentTimeMillis())
+    val contentValues = ContentValues().apply {
+        put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+        put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Dishy")
+        }
+    }
 
-    val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+    val outputOptions = ImageCapture.OutputFileOptions
+        .Builder(context.contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        .build()
 
     imageCapture.takePicture(
         outputOptions,
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                val savedUri = Uri.fromFile(photoFile).toString()
+                val savedUri = outputFileResults.savedUri ?: Uri.EMPTY
                 onImageCaptured(savedUri)
             }
 

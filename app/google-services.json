@@ -12,7 +12,20 @@
           "package_name": "com.example.dishy_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "756898981415-e3nruufihnj2e07liorr2mb2oqicujke.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.dishy_app",
+            "certificate_hash": "727e48eb92798946449b359536de0b4d87dafc0e"
+          }
+        },
+        {
+          "client_id": "756898981415-k9taknjmbs2fdtfmp3b2r8ju9k7bad45.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBxzD05HxEUL7FZZBaSb1-nDscD4TzG1O0"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "756898981415-k9taknjmbs2fdtfmp3b2r8ju9k7bad45.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
