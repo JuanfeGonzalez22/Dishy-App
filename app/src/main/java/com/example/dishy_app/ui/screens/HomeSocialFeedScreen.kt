@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,8 +32,10 @@ import coil.compose.AsyncImage
 import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.data.model.Place
 import com.example.dishy_app.data.model.DishyPost
+import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.ui.components.BottomBarComponent
 import com.example.dishy_app.ui.viewModel.HomeViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,8 +64,13 @@ fun HomeSocialFeedScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = { }) {
-                            Icon(Icons.Default.Search, "Search", tint = Color.Black)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { }) {
+                                Icon(Icons.Default.Search, "Search", tint = Color.Black)
+                            }
+                            IconButton(onClick = { navController.navigate("camera") }) {
+                                Icon(Icons.Default.Add, "New Post", tint = Color.Black)
+                            }
                         }
                     },
                     actions = {
@@ -72,13 +81,37 @@ fun HomeSocialFeedScreen(
                             Icon(Icons.AutoMirrored.Filled.Logout, "Logout", tint = Color.Black)
                         }
                     }
+                        IconButton(onClick = { FirebaseAuthManager.signOut() }) {
+                            Icon(Icons.AutoMirrored.Filled.Logout, "Cerrar sesión", tint = Color.Black)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
                 )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { navController.navigate("camera") },
+                    containerColor = Color(0xFFFF4A3D),
+                    contentColor = Color.White,
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Default.AddAPhoto, "New Post")
+                }
             },
             bottomBar = {
                 BottomBarComponent(
                     currentRoute = "home",
-                    onNavigate = { route -> navController.navigate(route) }
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
+
             }
         ) { paddingValues ->
             if (isLoading) {
@@ -102,6 +135,25 @@ fun HomeSocialFeedScreen(
                                 selected = selectedFilter == filtro,
                                 onClick = { selectedFilter = filtro },
                                 label = { Text(filtro) }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                // SECCIÓN DE FILTROS
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val filtros = listOf("All", "For you", "Cafes", "Restaurants", "Workspaces", "Bars")
+                    items(filtros) { filtro ->
+                        FilterChip(
+                            selected = selectedFilter == filtro,
+                            onClick = { selectedFilter = filtro },
+                            label = { Text(filtro) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color.Black,
+                                selectedLabelColor = Color.White
                             )
                         }
                     }
@@ -133,10 +185,66 @@ fun HomeSocialFeedScreen(
                                 )
                             }
                         }
+                // --- CAMBIO DE LAYOUT ---
+                if (selectedFilter == "For you") {
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp), // Padding menor para look de IG
+                        contentPadding = PaddingValues(bottom = 16.dp),
+                        verticalItemSpacing = 4.dp, // Espacio mínimo entre fotos
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(samplePosts) { post ->
+                            StaggeredVibeCard(
+                                post = post,
+                                onClick = { navController.navigate("post_detail/${post.id}") }
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(samplePlaces) { place ->
+                            PlaceCard(
+                                place = place,
+                                onClick = { navController.navigate("detail/${place.id}") }
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+// --- COMPONENTE ESTILO INSTAGRAM (SOLO FOTO) ---
+@Composable
+fun StaggeredVibeCard(post: DishyPost, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp)) // Bordes un poco más cerrados para look profesional
+            .clickable { onClick() }
+    ) {
+        AsyncImage(
+            model = post.imageUrl,
+            contentDescription = post.placeName,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // PEQUEÑO INDICADOR DE VIBRA (Sutil, arriba a la derecha)
+        Icon(
+            imageVector = if (post.vibeSpecs.wifiSpeed == "High Speed") Icons.Default.Wifi else Icons.Default.Bolt,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.8f),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp)
+                .size(16.dp)
+        )
     }
 }
 
@@ -178,11 +286,33 @@ fun PlaceCard(place: Place, onClick: () -> Unit) {
                 .fillMaxSize()
                 .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.7f))))
         )
+
         Column(
             modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)
         ) {
             Text(place.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Text(place.category, fontSize = 14.sp, color = Color.LightGray)
         }
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFFF4A3D)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, "Ver más", tint = Color.White, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun HomeScreenPreview() {
+    MaterialTheme {
+        HomeSocialFeedScreen(navController = rememberNavController())
     }
 }

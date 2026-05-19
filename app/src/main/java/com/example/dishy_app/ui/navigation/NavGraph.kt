@@ -12,19 +12,28 @@ import com.example.dishy_app.ui.screens.LoginScreen
 import com.example.dishy_app.ui.screens.PlaceDetailScreen
 import com.example.dishy_app.ui.screens.RegisterScreen
 import com.example.dishy_app.ui.screens.SavedPlacesScreen
+import com.example.dishy_app.ui.screens.ShakeDiscoverScreen
+import com.example.dishy_app.ui.screens.MapScreen
+import com.example.dishy_app.ui.screens.ProfileScreen
+import com.example.dishy_app.ui.screens.CameraScreen
+import com.example.dishy_app.ui.screens.CreatePostScreen
+import com.example.dishy_app.ui.screens.PostDetailScreen
 
 @Composable
-fun AppNavGraph() {
+fun AppNavGraph(isUserLoggedIn: Boolean = false) {
     val navController = rememberNavController()
+    val startDestination = if (isUserLoggedIn) "home" else "login"
 
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = startDestination
     ) {
+        // 1. Pantalla de Login
         composable("login") {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate("register") },
-                onNavigateToHome = { 
+                onNavigateToHome = {
+                    // Limpiar backstack para no volver al login con botón atrás
                     navController.navigate("home") {
                         popUpTo("login") { inclusive = true }
                     }
@@ -33,10 +42,11 @@ fun AppNavGraph() {
             )
         }
 
+        // 2. Pantalla de Registro
         composable("register") {
             RegisterScreen(
                 onNavigateToLogin = { navController.navigate("login") },
-                onNavigateToHome = { 
+                onNavigateToHome = {
                     navController.navigate("home") {
                         popUpTo("register") { inclusive = true }
                     }
@@ -44,24 +54,84 @@ fun AppNavGraph() {
             )
         }
 
+        // 3. Pantalla de Recuperar Contraseña
+        composable("forgot_password") {
+            ForgotPasswordScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 4. Pantalla de Home
         composable("home") {
             HomeSocialFeedScreen(navController = navController)
         }
 
+        // 5. Pantalla de Shake
+        composable("shake") {
+            ShakeDiscoverScreen(navController = navController)
+        }
+
+        // 6. Pantalla de Map
+        composable("map") {
+            MapScreen(navController = navController)
+        }
+
+        // 7. Pantalla de Detalles del Lugar
         composable(
             route = "detail/{placeId}",
-            arguments = listOf(navArgument("placeId") { type = NavType.StringType })
+            arguments = listOf(navArgument("placeId") { type = NavType.IntType })
         ) { backStackEntry ->
-            val placeId = backStackEntry.arguments?.getString("placeId") ?: ""
-            PlaceDetailScreen(placeId = placeId, navController = navController)
+            val placeId = backStackEntry.arguments?.getInt("placeId") ?: 1
+
+            // Busca el objeto Place por su ID en los datos compartidos del grupo
+            val place = com.example.dishy_app.ui.screens.samplePlaces.find { it.id == placeId }
+
+            if (place != null) {
+                PlaceDetailScreen(place = place, navController = navController)
+            }
         }
 
-        composable("forgot_password") {
-            ForgotPasswordScreen(onNavigateBack = { navController.popBackStack() })
-        }
-
+        // 8. Pantalla de Lugares Guardados
         composable("saved_places") {
             SavedPlacesScreen(navController = navController)
+        }
+
+        // 9. Pantalla de Perfil
+        composable("profile") {
+            ProfileScreen(navController = navController)
+        }
+
+        // 10. Pantalla de Cámara
+        composable("camera") {
+            CameraScreen(navController = navController)
+        }
+
+        // 11. Pantalla de Creación de Post
+        composable(
+            route = "create_post?imageUri={imageUri}",
+            arguments = listOf(navArgument("imageUri") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val imageUri = backStackEntry.arguments?.getString("imageUri")
+            CreatePostScreen(imageUri = imageUri, navController = navController)
+        }
+
+        // 12. Pantalla de Detalle de Post (Social)
+        composable(
+            route = "post_detail/{postId}",
+            arguments = listOf(navArgument("postId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId") ?: "1"
+
+            // Busca el objeto Post por su ID para entregárselo directo a la pantalla
+            val post = com.example.dishy_app.ui.screens.samplePosts.find { it.id == postId }
+
+            if (post != null) {
+                PostDetailScreen(post = post, navController = navController)
+            }
         }
     }
 }

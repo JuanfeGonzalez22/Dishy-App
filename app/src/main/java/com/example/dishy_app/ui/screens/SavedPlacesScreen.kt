@@ -28,6 +28,7 @@ import coil.compose.AsyncImage
 import com.example.dishy_app.data.model.Place
 import com.example.dishy_app.ui.components.BottomBarComponent
 import com.example.dishy_app.ui.viewModel.SavedPlacesViewModel
+import com.example.dishy_app.ui.components.VibeTag
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +68,13 @@ fun SavedPlacesScreen(
             bottomBar = {
                 BottomBarComponent(
                     currentRoute = "saved_places",
-                    onNavigate = { route -> navController.navigate(route) }
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
         ) { paddingValues ->
@@ -86,21 +93,22 @@ fun SavedPlacesScreen(
                         .fillMaxWidth()
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    Text("Your Collection", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text("${savedPlaces.size} places", color = Color.Gray, fontSize = 12.sp)
+                    Text("Your Collection",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold)
+                    Text("2 places",
+                        color = Color.Gray,
+                        fontSize = 12.sp)
                 }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(savedPlaces) { place ->
-                        SavedPlaceCard(
-                            place = place,
-                            onClick = { navController.navigate("detail/${place.id}") }
-                        )
+                    items(samplePlaces) { place ->
+                        SavedPlaceCard(place = place)
                     }
                 }
             }
@@ -206,5 +214,13 @@ fun SavedPlaceCard(place: Place, onClick: () -> Unit) {
 fun VibeTag(text: String) {
     Surface(color = Color(0xFFF1F3F4), shape = RoundedCornerShape(8.dp)) {
         Text(text, color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SavedPlacesPreview() {
+    MaterialTheme {
+        SavedPlacesScreen(navController = rememberNavController())
     }
 }

@@ -25,6 +25,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.ui.components.BottomBarComponent
 import com.example.dishy_app.ui.viewModel.PlaceDetailViewModel
+import com.example.dishy_app.ui.components.NavigationItem
+
 
 @Composable
 fun PlaceDetailScreen(
@@ -61,6 +63,12 @@ fun PlaceDetailScreen(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
+                AsyncImage(
+                    model = place.imageUrl, // <-- CAMBIO: Ahora usamos imageUrl
+                    contentDescription = place.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
 
                     IconButton(
                         onClick = { navController.popBackStack() },
@@ -77,7 +85,7 @@ fun PlaceDetailScreen(
                 // Detalles
                 Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
                     Text(place.name, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    
+
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("⭐ ${place.rating}", fontWeight = FontWeight.Bold, color = Color(0xFFFFB300))
                         Text(" (${place.reviews} reviews) • ${place.category}", color = Color.Gray)
@@ -95,6 +103,23 @@ fun PlaceDetailScreen(
                         VibeChip(Icons.Default.VolumeDown, "Quiet", "NOISE", Modifier.weight(1f))
                     }
 
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Comunidad
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "Community", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "See All",
+                        fontSize = 14.sp,
+                        color = Color(0xFFFF4A3D),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
                     Spacer(modifier = Modifier.height(24.dp))
                     Text("Community Photos", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
@@ -109,9 +134,26 @@ fun PlaceDetailScreen(
                             )
                         }
                     }
+                // Fotos de la comunidad (Cargadas desde Internet)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    place.communityPhotos.forEach { photoUrl ->
+                        AsyncImage(
+                            model = photoUrl, // <-- CAMBIO: Ahora usamos photoUrl
+                            contentDescription = "Community Photo",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(80.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                        )
+                    }
+                }
 
                     Spacer(modifier = Modifier.height(30.dp))
-                    
+
                     Button(
                         onClick = { },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -125,6 +167,40 @@ fun PlaceDetailScreen(
                 }
             }
 
+        // Barra inferior fija
+        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    NavigationItem(Icons.Default.Home, "Explore", false, onClick = { navController.navigate("home") })
+                    NavigationItem(Icons.Default.Public, "Map", false, onClick = { navController.navigate("map") })
+                    Spacer(modifier = Modifier.width(48.dp))
+                    NavigationItem(Icons.Default.FavoriteBorder, "Saved", false, onClick = { navController.navigate("saved_places") })
+                    NavigationItem(Icons.Default.Person, "Profile", false)
+                }
+            }
+
+            FloatingActionButton(
+                onClick = { navController.navigate("shake") },
+                containerColor = Color(0xFFFF4A3D),
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(y = (-28).dp)
+                    .size(56.dp)
+            ) {
+                Icon(Icons.Default.Casino, "Random", Modifier.size(28.dp))
+            }
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 BottomBarComponent(
                     currentRoute = "",
