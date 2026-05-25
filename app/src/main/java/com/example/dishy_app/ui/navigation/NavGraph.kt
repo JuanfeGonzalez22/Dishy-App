@@ -6,37 +6,24 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.dishy_app.ui.screens.CameraScreen
-import com.example.dishy_app.ui.screens.CreatePostScreen
-import com.example.dishy_app.ui.screens.ForgotPasswordScreen
-import com.example.dishy_app.ui.screens.HomeSocialFeedScreen
-import com.example.dishy_app.ui.screens.LoginScreen
-import com.example.dishy_app.ui.screens.MapScreen
-import com.example.dishy_app.ui.screens.PlaceDetailScreen
-import com.example.dishy_app.ui.screens.PostDetailScreen
-import com.example.dishy_app.ui.screens.ProfileScreen
-import com.example.dishy_app.ui.screens.RegisterScreen
-import com.example.dishy_app.ui.screens.SavedPlacesScreen
-import com.example.dishy_app.ui.screens.ShakeDiscoverScreen
-import com.example.dishy_app.ui.screens.samplePlaces
-import com.example.dishy_app.ui.screens.samplePosts
+import com.example.dishy_app.ui.screens.*
 
 @Composable
 fun AppNavGraph(isUserLoggedIn: Boolean = false) {
     val navController = rememberNavController()
-    
+
+    // Determinamos la pantalla de inicio
     val startDestination = if (isUserLoggedIn) "home" else "login"
 
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
-        // 1. Pantalla de Login
+        // 1. Login
         composable("login") {
             LoginScreen(
                 onNavigateToRegister = { navController.navigate("register") },
-                onNavigateToHome = { 
-                    // Limpiar backstack para no volver al login con botón atrás
+                onNavigateToHome = {
                     navController.navigate("home") {
                         popUpTo("login") { inclusive = true }
                     }
@@ -45,11 +32,11 @@ fun AppNavGraph(isUserLoggedIn: Boolean = false) {
             )
         }
 
-        // 2. Pantalla de Registro
+        // 2. Registro
         composable("register") {
             RegisterScreen(
                 onNavigateToLogin = { navController.navigate("login") },
-                onNavigateToHome = { 
+                onNavigateToHome = {
                     navController.navigate("home") {
                         popUpTo("register") { inclusive = true }
                     }
@@ -57,59 +44,69 @@ fun AppNavGraph(isUserLoggedIn: Boolean = false) {
             )
         }
 
-        // 3. Pantalla de Recuperar Contraseña
+        // 3. Olvidé mi contraseña
         composable("forgot_password") {
             ForgotPasswordScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        // 4. Pantalla de Home
+        // 4. Feed Social (Home)
         composable("home") {
             HomeSocialFeedScreen(navController = navController)
         }
 
-        // 5. Pantalla de Shake
+        // 5. Shake & Discover
         composable("shake") {
             ShakeDiscoverScreen(navController = navController)
         }
 
-        // 6. Pantalla de Map
+        // 6. Mapa
         composable("map") {
             MapScreen(navController = navController)
         }
 
-        // 7. Pantalla de Detalles del Lugar
+        // 7. Detalle de Restaurante (Datos Reales)
         composable(
             route = "detail/{placeId}",
-            arguments = listOf(navArgument("placeId") { type = NavType.IntType })
+            arguments = listOf(navArgument("placeId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val placeId = backStackEntry.arguments?.getInt("placeId") ?: 1
-            val place = samplePlaces.find { it.id == placeId }
-            if (place != null) {
-                PlaceDetailScreen(place = place, navController = navController)
-            }
+            val placeId = backStackEntry.arguments?.getString("placeId") ?: ""
+            PlaceDetailScreen(placeId = placeId, navController = navController)
         }
 
-        // 8. Pantalla de Saved Places
+        // 8. Lugares Guardados
         composable("saved_places") {
             SavedPlacesScreen(navController = navController)
         }
 
-        // 9. Pantalla de perfil
-        composable("profile") {
-            ProfileScreen(navController = navController)
+        // 9. Perfil de Usuario
+        composable(
+            route = "profile?userId={userId}",
+            arguments = listOf(navArgument("userId") { 
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId")
+            ProfileScreen(navController = navController, userId = userId)
         }
 
-        // 10. Pantalla de Cámara
+        // 10. Perfil de Dueño de Restaurante
+        composable("restaurant_profile") {
+            RestaurantProfileScreen(navController = navController)
+        }
+
+        // 11. Cámara
         composable("camera") {
             CameraScreen(navController = navController)
         }
 
-        // 11. Pantalla de Creación de Post
+        // 12. Creación de Post (Recibe la URI de la foto)
         composable(
             route = "create_post?imageUri={imageUri}",
-            arguments = listOf(navArgument("imageUri") { 
+            arguments = listOf(navArgument("imageUri") {
                 type = NavType.StringType
                 nullable = true
                 defaultValue = null
@@ -119,16 +116,22 @@ fun AppNavGraph(isUserLoggedIn: Boolean = false) {
             CreatePostScreen(imageUri = imageUri, navController = navController)
         }
 
-        // 11. Pantalla de Detalle de Post (Social)
+        // 13. Detalle de Post Social (Datos Reales)
         composable(
             route = "post_detail/{postId}",
             arguments = listOf(navArgument("postId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val postId = backStackEntry.arguments?.getString("postId") ?: "1"
-            val post = samplePosts.find { it.id == postId }
-            if (post != null) {
-                PostDetailScreen(post = post, navController = navController)
-            }
+            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+            PostDetailScreen(postId = postId, navController = navController)
+        }
+
+        // 14. Editar Perfil
+        composable(
+            route = "edit_profile/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            EditProfileScreen(userId = userId, navController = navController)
         }
     }
 }

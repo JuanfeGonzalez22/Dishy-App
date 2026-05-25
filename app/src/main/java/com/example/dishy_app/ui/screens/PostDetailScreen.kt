@@ -11,7 +11,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,130 +19,207 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.dishy_app.FirebaseAuthManager
+import com.example.dishy_app.ui.viewModel.PostDetailViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun PostDetailScreen(post: DishyPost, navController: NavController) {
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // Imagen con Overlay de Nombre y Ubicación
-        Box(modifier = Modifier.fillMaxWidth().height(400.dp)) {
-            AsyncImage(
-                model = post.imageUrl,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-            
-            // Botón volver
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .padding(16.dp)
-                    .align(Alignment.TopStart)
-                    .clip(CircleShape)
-                    .background(Color(0x99000000))
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-            }
+fun PostDetailScreen(
+    postId: String, 
+    navController: NavController,
+    viewModel: PostDetailViewModel = viewModel()
+) {
+    LaunchedEffect(postId) {
+        viewModel.loadPost(postId)
+    }
 
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
-                        )
-                    )
-                    .padding(20.dp)
-            ) {
-                Text(post.placeName, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
-                    Text(post.location, color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
+    val post = viewModel.post
+    val isLoading = viewModel.isLoading
+    val isFavorite = viewModel.isFavorite
+    
+    val currentUser by FirebaseAuthManager.currentUser.collectAsState()
+    val userRole by FirebaseAuthManager.userRole.collectAsState()
+
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Color(0xFFFF4A3D))
+        }
+    } else if (post == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Post not found")
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            // Imagen Hero
+            Box(modifier = Modifier.fillMaxWidth().height(400.dp)) {
+                AsyncImage(
+                    model = post.imageUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                
+                // Botón Atrás
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .align(Alignment.TopStart)
+                        .clip(CircleShape)
+                        .background(Color(0x99000000))
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                 }
-            }
-        }
 
-        // Fichas de Vibe (WiFi, Comfort, Noise)
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            VibeDisplayCard(Icons.Default.Wifi, post.vibeSpecs.wifiSpeed, "WIFI SPEED", Modifier.weight(1f))
-            VibeDisplayCard(Icons.Default.Chair, post.vibeSpecs.comfortLevel, "COMFORT", Modifier.weight(1f))
-            VibeDisplayCard(Icons.AutoMirrored.Filled.VolumeUp, post.vibeSpecs.noiseLevel, "NOISE", Modifier.weight(1f))
-        }
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // BOTÓN FAVORITO
+                    IconButton(
+                        onClick = { viewModel.toggleFavorite() },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Color(0x99000000))
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) Color.Red else Color.White
+                        )
+                    }
 
-        // Info del Autor y Descripción
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = post.authorPhotoUrl,
-                contentDescription = null,
-                modifier = Modifier.size(45.dp).clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-            Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(post.authorName, fontWeight = FontWeight.Bold)
-                    if (post.authorRole == "BUSINESS") {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(Icons.Default.CheckCircle, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
+                    // BOTÓN ELIMINAR (Solo Autor o Admin)
+                    if (currentUser?.uid == post.userId || userRole == "ADMIN") {
+                        IconButton(
+                            onClick = { 
+                                viewModel.deletePost(post.id) {
+                                    navController.navigate("home") {
+                                        popUpTo("home") { inclusive = true }
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(Color(0x99FF4A3D))
+                        ) {
+                            if (viewModel.isDeleting) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                            } else {
+                                Icon(Icons.Default.Delete, null, tint = Color.White)
+                            }
+                        }
                     }
                 }
-                Text("Posted 2 hours ago", color = Color.Gray, fontSize = 12.sp)
+
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f))
+                            )
+                        )
+                        .padding(20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(post.placeName, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        // CATEGORÍA BADGE
+                        Surface(
+                            color = Color(0xFFFF4A3D),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = post.category,
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.LocationOn, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
+                        Text(post.location, color = Color.White.copy(alpha = 0.8f), fontSize = 16.sp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        // RATING
+                        Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
+                        Text(" ${post.rating}", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
+
+            // Vibes
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                VibeDisplayCard(Icons.Default.Wifi, post.vibeSpecs.wifiSpeed, "WIFI SPEED", Modifier.weight(1f))
+                VibeDisplayCard(Icons.Default.Chair, post.vibeSpecs.comfortLevel, "COMFORT", Modifier.weight(1f))
+                VibeDisplayCard(if(post.vibeSpecs.plugsAvailable) Icons.Default.Power else Icons.AutoMirrored.Filled.VolumeUp, if(post.vibeSpecs.plugsAvailable) "YES" else post.vibeSpecs.noiseLevel, if(post.vibeSpecs.plugsAvailable) "PLUGS" else "NOISE", Modifier.weight(1f))
+            }
+
+            // Autor del Post
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val authorPhoto = if (post.authorPhotoUrl.isBlank()) "https://cdn-icons-png.flaticon.com/512/149/149071.png" else post.authorPhotoUrl
+                
+                AsyncImage(
+                    model = authorPhoto,
+                    contentDescription = null,
+                    modifier = Modifier.size(45.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(post.userName, fontWeight = FontWeight.Bold)
+                        if (post.authorRole == "BUSINESS") {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(Icons.Default.CheckCircle, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
+                        }
+                    }
+                    Text(if (post.authorRole == "BUSINESS") "Official Business" else "Community Member", color = Color.Gray, fontSize = 12.sp)
+                }
+            }
+
+            Text(
+                text = post.description,
+                modifier = Modifier.padding(horizontal = 16.dp),
+                lineHeight = 22.sp,
+                fontSize = 15.sp,
+                color = Color.DarkGray
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+
             Button(
                 onClick = {},
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)),
-                shape = RoundedCornerShape(20.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D))
             ) {
-                Text("Follow", fontWeight = FontWeight.Bold)
+                Icon(Icons.Default.Directions, null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Get Directions", fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
+            
+            Spacer(modifier = Modifier.height(20.dp))
         }
-
-        Text(
-            text = post.description,
-            modifier = Modifier.padding(horizontal = 16.dp),
-            lineHeight = 22.sp,
-            fontSize = 15.sp,
-            color = Color.DarkGray
-        )
-        
-        // Tags
-        FlowRow(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            post.tags.forEach { tag ->
-                Text("#$tag", color = Color(0xFFFF4A3D), fontWeight = FontWeight.Medium)
-            }
-        }
-
-        Button(
-            onClick = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D))
-        ) {
-            Icon(Icons.Default.Directions, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Get Directions", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        }
-        
-        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -163,10 +240,4 @@ fun VibeDisplayCard(icon: ImageVector, value: String, label: String, modifier: M
             Text(label, fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PostDetailScreenPreview() {
-    PostDetailScreen(post = samplePosts.first(), navController = rememberNavController())
 }

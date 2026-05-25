@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ShowChart
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -22,38 +22,66 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.ui.components.BottomBarComponent
+import com.example.dishy_app.ui.components.StatItem
+import com.example.dishy_app.ui.viewModel.HomeViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RestaurantProfileScreen(navController: NavController) {
+fun RestaurantProfileScreen(
+    navController: NavController,
+    targetUserId: String? = null,
+    homeViewModel: HomeViewModel = viewModel()
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
     
-    // Obtener datos reales del usuario desde nuestro Manager
+    val currentUserId = FirebaseAuthManager.currentUser.collectAsState().value?.uid
+    val userRole by FirebaseAuthManager.userRole.collectAsState()
+    
+    val isMyProfile = targetUserId == null || targetUserId == currentUserId
+    val canEdit = isMyProfile || userRole == "ADMIN"
+    
     val currentUserName by FirebaseAuthManager.userName.collectAsState()
     val currentUser by FirebaseAuthManager.currentUser.collectAsState()
     
-    val businessName = currentUserName ?: "Cargando..."
-    val businessPhoto = currentUser?.photoUrl?.toString() ?: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4"
+    val defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+    val businessName = if (isMyProfile) (currentUserName ?: "My Business") else "Restaurant Name"
+    val businessPhoto = if (isMyProfile) (currentUser?.photoUrl?.toString() ?: defaultAvatar) else defaultAvatar
+
+    val effectiveUserId = targetUserId ?: currentUserId ?: ""
+    val restaurantPosts = homeViewModel.posts.filter { it.userId == effectiveUserId }
 
     Scaffold(
-        bottomBar = {
-            BottomBarComponent(
-                currentRoute = "profile",
-                onNavigate = { route ->
-                    navController.navigate(route) {
-                        popUpTo("home") { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(if (isMyProfile) "Business Hub" else "Restaurant", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
+        },
+        bottomBar = {
+            if (isMyProfile) {
+                BottomBarComponent(
+                    currentRoute = "profile",
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -62,66 +90,18 @@ fun RestaurantProfileScreen(navController: NavController) {
                 .padding(paddingValues)
                 .background(Color.White)
         ) {
-            // --- TOP BAR "Business Hub" ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Storefront,
-                        contentDescription = null,
-                        tint = Color(0xFFFF4A3D),
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Business Hub",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF2D2D2D)
-                    )
-                }
-                Row {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFFFF1F0),
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        IconButton(onClick = { }) {
-                            Icon(Icons.AutoMirrored.Outlined.ShowChart, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(20.dp))
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFFFF1F0),
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        IconButton(onClick = { }) {
-                            Icon(Icons.Default.Settings, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(20.dp))
-                        }
-                    }
-                }
-            }
-
-            // --- PROFILE HEADER ---
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(contentAlignment = Alignment.BottomEnd) {
-                    // Profile Image with Glow Effect
                     Box(
                         modifier = Modifier
-                            .size(130.dp)
-                            .padding(8.dp)
+                            .size(120.dp)
+                            .padding(4.dp)
                             .background(
                                 brush = Brush.radialGradient(
-                                    colors = listOf(Color(0xFFCC9933), Color.Transparent)
+                                    colors = listOf(Color(0xFFFF4A3D).copy(0.2f), Color.Transparent)
                                 ),
                                 shape = CircleShape
                             ),
@@ -131,152 +111,108 @@ fun RestaurantProfileScreen(navController: NavController) {
                             model = businessPhoto,
                             contentDescription = "Restaurant Logo",
                             modifier = Modifier
-                                .size(110.dp)
+                                .size(100.dp)
                                 .clip(CircleShape)
                                 .border(3.dp, Color.White, CircleShape),
                             contentScale = ContentScale.Crop
                         )
                     }
-                    // Verified Badge
                     Surface(
                         shape = CircleShape,
                         color = Color(0xFFFF4A3D),
-                        modifier = Modifier
-                            .size(28.dp)
-                            .offset(x = (-8).dp, y = (-8).dp)
-                            .border(2.dp, Color.White, CircleShape)
+                        modifier = Modifier.size(24.dp).offset(x = (-4).dp, y = (-4).dp).border(2.dp, Color.White, CircleShape)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Verified",
-                            tint = Color.White,
-                            modifier = Modifier.padding(4.dp)
-                        )
+                        Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.padding(4.dp))
                     }
                 }
 
-                Text(
-                    text = businessName,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF2D2D2D)
-                )
-                Text(
-                    text = "Fine Dining & Mediterranean Fusion",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
+                Text(businessName, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2D2D2D))
+                Text("Business Member", fontSize = 13.sp, color = Color.Gray)
+                
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                     Icon(Icons.Default.LocationOn, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
-                    Text(text = " MADRID, SPAIN", fontSize = 12.sp, color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold)
+                    Text(" Location Enabled", fontSize = 12.sp, color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold)
                 }
 
-                // Buttons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Button(
-                        onClick = { },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text("Edit Profile", fontWeight = FontWeight.Bold)
+                if (canEdit) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = { navController.navigate("edit_profile/$effectiveUserId") }, 
+                            modifier = Modifier.weight(1f).height(48.dp), 
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)), 
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("Edit Profile", fontWeight = FontWeight.Bold)
+                        }
+                        if (isMyProfile) {
+                            Button(onClick = { }, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F3F4)), shape = RoundedCornerShape(16.dp)) {
+                                Text("Manage", color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
-                    Button(
-                        onClick = { },
-                        modifier = Modifier.weight(1f).height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F3F4)),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text("Manage Business", color = Color(0xFFFF4A3D), fontWeight = FontWeight.Bold)
+                } else {
+                    Button(onClick = { }, modifier = Modifier.fillMaxWidth().padding(24.dp).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)), shape = RoundedCornerShape(16.dp)) {
+                        Text("Follow", fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
-            // --- STATS CARDS ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard("12.5k", "FOLLOWERS", Modifier.weight(1f))
-                StatCard("842", "TOTAL VIBES", Modifier.weight(1f))
-                StatCard("4.9 ★", "AVG RATING", Modifier.weight(1f))
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                StatItem("0", "FOLLOWERS")
+                StatItem(restaurantPosts.size.toString(), "POSTS")
+                StatItem("0 ★", "RATING")
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // --- TABS ---
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.White,
                 contentColor = Color(0xFFFF4A3D),
                 indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = Color(0xFFFF4A3D)
-                    )
-                },
-                divider = { HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray) }
+                    if (selectedTab < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = Color(0xFFFF4A3D)
+                        )
+                    }
+                }
             ) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                    Text("Our Feed", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold, color = if (selectedTab == 0) Color(0xFFFF4A3D) else Color.Gray)
+                    Text("Our Feed", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
                 }
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                    Text("Tagged", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold, color = if (selectedTab == 1) Color(0xFFFF4A3D) else Color.Gray)
+                    Text("Tagged", modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
                 }
             }
 
-            // --- PHOTO GRID ---
-            val photos = List(9) { "https://picsum.photos/400/400?random=$it" }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(2.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                contentPadding = PaddingValues(1.dp),
+                horizontalArrangement = Arrangement.spacedBy(1.dp),
+                verticalArrangement = Arrangement.spacedBy(1.dp)
             ) {
-                items(photos) { photoUrl ->
+                if (isMyProfile) {
+                    item {
+                        Box(modifier = Modifier.aspectRatio(1f).background(Color(0xFFF1F3F4)).clickable { navController.navigate("camera") }, contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.AddAPhoto, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+                                Text("Add Vibe", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                items(restaurantPosts) { post ->
                     AsyncImage(
-                        model = photoUrl,
+                        model = post.imageUrl,
                         contentDescription = null,
-                        modifier = Modifier.aspectRatio(1f),
+                        modifier = Modifier.aspectRatio(1f).clickable { navController.navigate("post_detail/${post.id}") },
                         contentScale = ContentScale.Crop
                     )
                 }
             }
         }
     }
-}
-
-@Composable
-fun StatCard(value: String, label: String, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFFF4A3D))
-            Text(text = label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RestaurantProfileScreenPreview() {
-    RestaurantProfileScreen(navController = rememberNavController())
 }
