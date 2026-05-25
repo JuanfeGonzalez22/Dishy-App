@@ -9,6 +9,8 @@ data class DishyPost(
     val authorRole: String = "USER",
     val placeName: String = "",
     val location: String = "",
+    val category: String = "Cafe", // Nuevo: Para filtros del feed
+    val rating: Double = 5.0,      // Nuevo: Calificación del lugar
     val imageUrl: String = "",
     val description: String = "",
     val tags: List<String> = emptyList(),

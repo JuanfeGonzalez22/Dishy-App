@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -19,14 +20,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.dishy_app.ui.viewModel.MapViewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -35,6 +35,7 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import androidx.compose.runtime.collectAsState
 import coil.compose.AsyncImage
+import com.example.dishy_app.data.model.Place
 import com.example.dishy_app.ui.components.BottomBarComponent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,9 +45,11 @@ fun MapScreen(navController: NavController) {
     val context = LocalContext.current
     val viewModel: MapViewModel = viewModel()
     val locationGranted by viewModel.locationGranted.collectAsState()
+    val filteredPlaces = viewModel.filteredPlaces
+    val searchQuery = viewModel.searchQuery
     var selectedFilter by remember { mutableStateOf("All") }
 
-    // Launcher para pedir permiso de ubicacion
+    // Launcher para pedir permiso de ubicación
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -82,35 +85,28 @@ fun MapScreen(navController: NavController) {
             // ---- EL MAPA ----
             AndroidView(
                 factory = { ctx ->
-                    // Configuramos osmdroid
-                    Configuration.getInstance().load(
-                        ctx,
-                        ctx.getSharedPreferences("osmdroid", 0)
-                    )
-
-                    // Creamos el MapView
+                    Configuration.getInstance().load(ctx, ctx.getSharedPreferences("osmdroid", 0))
                     MapView(ctx).apply {
                         setTileSource(TileSourceFactory.MAPNIK)
                         setMultiTouchControls(true)
-
-                        // Centramos en Armenia, Colombia
-                        val startPoint = GeoPoint(4.5339, -75.6811)
                         controller.setZoom(15.0)
-                        controller.setCenter(startPoint)
-
-                        // Marcadores de cada lugar
-                        val coordenadas = listOf(
-                            Triple("The Coffee Collective", 4.5339, -75.6811),
-                            Triple("Nomad Workspace", 4.5350, -75.6820),
-                            Triple("Bluebird Bistro", 4.5360, -75.6800)
-                        )
-                        coordenadas.forEach { (nombre, lat, lng) ->
-                            val marker = Marker(this)
-                            marker.position = GeoPoint(lat, lng)
-                            marker.title = nombre
-                            overlays.add(marker)
-                        }
+                        controller.setCenter(GeoPoint(4.5339, -75.6811))
                     }
+                },
+                update = { mapView ->
+                    mapView.overlays.clear()
+                    filteredPlaces.forEach { place ->
+                        val marker = Marker(mapView)
+                        marker.position = GeoPoint(place.latitude, place.longitude)
+                        marker.title = place.name
+                        marker.snippet = place.category
+                        marker.setOnMarkerClickListener { m, _ ->
+                            m.showInfoWindow()
+                            true
+                        }
+                        mapView.overlays.add(marker)
+                    }
+                    mapView.invalidate()
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -121,7 +117,7 @@ fun MapScreen(navController: NavController) {
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
             ) {
-                // Barra de busqueda
+                // Barra de busqueda interactiva
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -143,23 +139,36 @@ fun MapScreen(navController: NavController) {
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Search Vibe",
-                            color = Color.Gray,
-                            fontSize = 15.sp
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
+                        
+                        Box(modifier = Modifier.weight(1f)) {
+                            if (searchQuery.isEmpty()) {
+                                Text(text = "Search Vibe", color = Color.Gray, fontSize = 15.sp)
+                            }
+                            BasicTextField(
+                                value = searchQuery,
+                                onValueChange = { viewModel.onSearchQueryChange(it) },
+                                textStyle = TextStyle(fontSize = 15.sp, color = Color.Black),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                        }
+
+                        if (searchQuery.isNotEmpty()) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Clear",
+                                tint = Color.Gray,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clickable { viewModel.onSearchQueryChange("") }
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(12.dp))
                         Icon(
                             imageVector = Icons.Default.Tune,
                             contentDescription = "Filtros",
                             tint = Color.Gray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notificaciones",
-                            tint = Color.Black,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -172,29 +181,18 @@ fun MapScreen(navController: NavController) {
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val filtros = listOf("Open Now", "Fast Wi-Fi", "Quiet", "Cafes", "Workspaces")
+                    val filtros = listOf("All", "Cafes", "Restaurants", "Workspaces")
                     items(filtros) { filtro ->
                         FilterChip(
                             selected = selectedFilter == filtro,
-                            onClick = { selectedFilter = filtro },
-                            label = { Text(filtro, fontSize = 12.sp) },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = when (filtro) {
-                                        "Open Now" -> Icons.Default.Schedule
-                                        "Fast Wi-Fi" -> Icons.Default.Wifi
-                                        "Quiet" -> Icons.Default.VolumeOff
-                                        "Cafes" -> Icons.Default.Coffee
-                                        else -> Icons.Default.Work
-                                    },
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
+                            onClick = { 
+                                selectedFilter = filtro
+                                viewModel.onSearchQueryChange(if (filtro == "All") "" else filtro)
                             },
+                            label = { Text(filtro, fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = Color(0xFFFF4A3D),
-                                selectedLabelColor = Color.White,
-                                selectedLeadingIconColor = Color.White
+                                selectedLabelColor = Color.White
                             )
                         )
                     }
@@ -202,19 +200,21 @@ fun MapScreen(navController: NavController) {
             }
 
             // ---- CARDS DE LUGARES EN LA PARTE INFERIOR ----
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(samplePlaces) { place ->
-                    PlaceMapCard(
-                        place = place,
-                        onClick = { navController.navigate("detail/${place.id}") }
-                    )
+            if (filteredPlaces.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filteredPlaces) { place ->
+                        PlaceMapCard(
+                            place = place,
+                            onClick = { navController.navigate("detail/${place.id}") }
+                        )
+                    }
                 }
             }
         }
@@ -225,7 +225,7 @@ fun MapScreen(navController: NavController) {
 fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
     Surface(
         modifier = Modifier
-            .width(200.dp)
+            .width(220.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
@@ -235,7 +235,7 @@ fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
+                    .height(110.dp)
             ) {
                 AsyncImage(
                     model = place.imageUrl,
@@ -251,28 +251,11 @@ fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "POPULAR",
+                        text = place.category.uppercase(),
                         fontSize = 9.sp,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
-                }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("⭐", fontSize = 10.sp)
-                        Text(
-                            text = " ${place.rating}",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
 
@@ -280,42 +263,23 @@ fun PlaceMapCard(place: Place, onClick: () -> Unit = {}) {
                 Text(
                     text = place.name,
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Cafe • ${place.distance} • \$\$",
+                    text = place.distance.ifBlank { "Nearby" },
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFFF0F0F0))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(place.description, fontSize = 10.sp, color = Color.DarkGray)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFFF0F0F0))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text("Good Wifi", fontSize = 10.sp, color = Color.DarkGray)
-                    }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700), modifier = Modifier.size(14.dp))
+                    Text(text = " ${place.rating}", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = place.address, fontSize = 11.sp, color = Color.LightGray, maxLines = 1)
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun MapScreenPreview() {
-    MaterialTheme {
-        MapScreen(navController = rememberNavController())
     }
 }

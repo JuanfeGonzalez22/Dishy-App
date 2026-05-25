@@ -16,27 +16,102 @@ class HomeViewModel : ViewModel() {
     private val placeRepository = PlaceRepository()
     private val postRepository = PostRepository()
 
+    private var allPlaces by mutableStateOf<List<Place>>(emptyList())
+    private var allPosts by mutableStateOf<List<DishyPost>>(emptyList())
+
     var places by mutableStateOf<List<Place>>(emptyList())
         private set
 
     var posts by mutableStateOf<List<DishyPost>>(emptyList())
         private set
 
-    // Estado para saber si estamos cargando datos
+    var favoritePostIds by mutableStateOf<List<String>>(emptyList())
+        private set
+
+    var favoritePlaceIds by mutableStateOf<List<String>>(emptyList())
+        private set
+
     var isLoading by mutableStateOf(false)
+        private set
+
+    var searchQuery by mutableStateOf("")
         private set
 
     init {
         loadData()
+        observePosts()
+        observeFavorites()
+    }
+
+    private fun observePosts() {
+        viewModelScope.launch {
+            postRepository.getPostsFlow().collect { updatedPosts ->
+                allPosts = updatedPosts
+                filterData()
+            }
+        }
+    }
+
+    private fun observeFavorites() {
+        viewModelScope.launch {
+            postRepository.getFavoritePostIdsFlow().collect { ids ->
+                favoritePostIds = ids
+            }
+        }
+        viewModelScope.launch {
+            postRepository.getFavoritePlaceIdsFlow().collect { ids ->
+                favoritePlaceIds = ids
+            }
+        }
     }
 
     fun loadData() {
         viewModelScope.launch {
             isLoading = true
-            // Lanzamos ambas peticiones en paralelo o secuencial
-            places = placeRepository.getAllPlaces()
-            posts = postRepository.getAllPosts()
+            allPlaces = placeRepository.getAllPlaces()
+            filterData()
             isLoading = false
+        }
+    }
+
+    fun onSearchQueryChange(newQuery: String) {
+        searchQuery = newQuery
+        filterData()
+    }
+
+    private fun filterData() {
+        posts = if (searchQuery.isBlank()) {
+            allPosts
+        } else {
+            allPosts.filter { 
+                it.placeName.contains(searchQuery, ignoreCase = true) || 
+                it.description.contains(searchQuery, ignoreCase = true) ||
+                it.location.contains(searchQuery, ignoreCase = true) ||
+                it.category.contains(searchQuery, ignoreCase = true)
+            }
+        }
+
+        places = if (searchQuery.isBlank()) {
+            allPlaces
+        } else {
+            allPlaces.filter {
+                it.name.contains(searchQuery, ignoreCase = true) ||
+                it.description.contains(searchQuery, ignoreCase = true) ||
+                it.category.contains(searchQuery, ignoreCase = true) ||
+                it.address.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
+
+    fun toggleFavoritePost(postId: String) {
+        viewModelScope.launch {
+            postRepository.toggleFavoritePost(postId)
+        }
+    }
+
+    fun toggleFavoritePlace(placeId: String) {
+        viewModelScope.launch {
+            postRepository.toggleFavoritePlace(placeId)
         }
     }
 }

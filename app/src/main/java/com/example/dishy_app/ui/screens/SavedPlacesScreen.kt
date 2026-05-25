@@ -4,6 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,13 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.dishy_app.data.model.DishyPost
 import com.example.dishy_app.data.model.Place
 import com.example.dishy_app.ui.components.BottomBarComponent
 import com.example.dishy_app.ui.viewModel.SavedPlacesViewModel
@@ -38,13 +40,14 @@ fun SavedPlacesScreen(
 ) {
     var selectedTab by remember { mutableStateOf("Want to Go") }
     val savedPlaces = viewModel.savedPlaces
+    val savedVibes = viewModel.savedVibes
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = "Saved Places",
+                        text = "Your Collection",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -52,11 +55,6 @@ fun SavedPlacesScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Lógica de búsqueda */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
                     }
                 }
             )
@@ -84,38 +82,57 @@ fun SavedPlacesScreen(
                 onTabSelected = { selectedTab = it }
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text("Your Collection",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold)
-                Text("${savedPlaces.size} places",
-                    color = Color.Gray,
-                    fontSize = 12.sp)
-            }
-
-            if (savedPlaces.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No places saved yet", color = Color.Gray)
+            if (selectedTab == "Vibes") {
+                if (savedVibes.isEmpty()) {
+                    EmptySavedState("No vibes saved yet")
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(1.dp),
+                        horizontalArrangement = Arrangement.spacedBy(1.dp),
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
+                        items(savedVibes) { post ->
+                            AsyncImage(
+                                model = post.imageUrl,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .clickable { navController.navigate("post_detail/${post.id}") },
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    items(savedPlaces) { place ->
-                        SavedPlaceCard(
-                            place = place,
-                            onClick = { navController.navigate("detail/${place.id}") }
-                        )
+                if (savedPlaces.isEmpty()) {
+                    EmptySavedState("No places in this collection")
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(savedPlaces) { place ->
+                            SavedPlaceCard(
+                                place = place,
+                                onClick = { navController.navigate("detail/${place.id}") }
+                            )
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun EmptySavedState(message: String) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Default.FavoriteBorder, null, modifier = Modifier.size(64.dp), tint = Color.LightGray)
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(message, color = Color.Gray)
         }
     }
 }
@@ -130,7 +147,7 @@ fun TabSelector(selectedTab: String, onTabSelected: (String) -> Unit) {
             .background(Color(0xFFF1F3F4))
             .padding(4.dp)
     ) {
-        val tabs = listOf("Want to Go", "Visited")
+        val tabs = listOf("Want to Go", "Visited", "Vibes")
         tabs.forEach { tab ->
             val isSelected = selectedTab == tab
             Surface(
@@ -146,7 +163,8 @@ fun TabSelector(selectedTab: String, onTabSelected: (String) -> Unit) {
                     modifier = Modifier.padding(vertical = 8.dp),
                     textAlign = TextAlign.Center,
                     color = if (isSelected) Color(0xFFFF4A3D) else Color.Gray,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    fontSize = 13.sp
                 )
             }
         }
@@ -201,29 +219,7 @@ fun SavedPlaceCard(place: Place, onClick: () -> Unit) {
                     }
                 }
                 Text(place.description, color = Color.Gray, fontSize = 13.sp, maxLines = 2)
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    VibeTag("Laptop Friendly")
-                    VibeTag("Quiet")
-                }
             }
         }
-    }
-}
-
-@Composable
-fun VibeTag(text: String) {
-    Surface(color = Color(0xFFF1F3F4), shape = RoundedCornerShape(8.dp)) {
-        Text(text, color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SavedPlacesPreview() {
-    MaterialTheme {
-        SavedPlacesScreen(navController = rememberNavController())
     }
 }

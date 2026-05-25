@@ -52,23 +52,21 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Arreglado: Sin versión fija para que use la del BOM perfectamente
     implementation("androidx.compose.runtime:runtime")
 
-    // Firebase (Usando rutas directas para evitar el error de 'minus' y 'version catalog')
+    // Firebase (Mantener Auth y Firestore, quitar Storage)
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-auth")
-    implementation("com.google.firebase:firebase-storage")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
-    // Google Sign In & Credentials (Rutas directas seguras)
+    // Google Sign In & Credentials
     implementation("androidx.credentials:credentials:1.2.2")
     implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
-    // CameraX & Permissions (Quita los errores de 'camera', 'services' y 'accompanist')
+    // CameraX & Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
     implementation("androidx.camera:camera-core:1.3.3")
     implementation("androidx.camera:camera-camera2:1.3.3")
@@ -82,6 +80,9 @@ dependencies {
     // Utils
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    
+    // Cloudinary para Storage gratuito sin tarjeta
+    implementation("com.cloudinary:cloudinary-android:3.0.2")
 
     // Tests
     testImplementation(libs.junit)

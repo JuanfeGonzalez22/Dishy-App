@@ -1,97 +1,112 @@
 package com.example.dishy_app.ui.viewModel
 
+import android.app.Application
 import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import com.cloudinary.android.MediaManager
+import com.cloudinary.android.callback.ErrorInfo
+import com.cloudinary.android.callback.UploadCallback
 import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.data.model.DishyPost
 import com.example.dishy_app.data.model.VibeSpecs
 import com.example.dishy_app.data.repository.PostRepository
-import com.google.firebase.storage.FirebaseStorage
-import kotlinx.coroutines.tasks.await
 import java.util.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
-class CreatePostViewModel : ViewModel() {
+class CreatePostViewModel(application: Application) : AndroidViewModel(application) {
     private val postRepository = PostRepository()
-    private val storage = FirebaseStorage.getInstance()
+    private val defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png"
 
     var isUploading by mutableStateOf(false)
         private set
 
+    init {
+        try {
+            val config = mapOf(
+                "cloud_name" to "dmqsitnom",
+                "secure" to true
+            )
+            MediaManager.init(application, config)
+        } catch (e: Exception) {
+            Log.d("DishyApp", "Cloudinary ya inicializado")
+        }
+    }
+
     suspend fun uploadAndCreatePost(
         imageUri: Uri,
         caption: String,
+        placeName: String,
+        location: String,
+        category: String,
+        rating: Double,
         wifi: String,
         comfort: String,
         noise: String,
+        plugs: Boolean,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
         isUploading = true
         try {
-            // 1. Generar nombre de archivo único
-            val fileName = "posts/${UUID.randomUUID()}.jpg"
-            val storageRef = storage.reference.child(fileName)
+            val imageUrl = uploadToCloudinary(imageUri)
             
-            Log.d("DishyApp", "Iniciando subida a Firebase: $fileName")
-
-            // 2. Subir archivo
-            // Usamos await() para esperar a que termine la subida real
-            val uploadTask = storageRef.putFile(imageUri).await()
-            
-            // 3. Verificar si la subida fue exitosa
-            if (uploadTask.task.isSuccessful) {
-                Log.d("DishyApp", "Subida completada con éxito")
-                
-                // 4. Intentar obtener el link de descarga
-                val downloadUrl = storageRef.downloadUrl.await().toString()
-                Log.d("DishyApp", "URL generada: $downloadUrl")
-
-                // 5. Guardar metadatos en Firestore
+            if (imageUrl != null) {
                 val currentUser = FirebaseAuthManager.currentUser.value
+                val photoUrl = currentUser?.photoUrl?.toString()
+                
                 val newPost = DishyPost(
                     id = UUID.randomUUID().toString(),
                     userId = currentUser?.uid ?: "",
                     userName = currentUser?.displayName ?: "Anonymous",
                     authorName = FirebaseAuthManager.userName.value ?: "Anonymous",
-                    authorPhotoUrl = currentUser?.photoUrl?.toString() ?: "",
+                    authorPhotoUrl = if (photoUrl.isNullOrBlank()) defaultAvatar else photoUrl,
                     authorRole = FirebaseAuthManager.userRole.value ?: "USER",
-                    imageUrl = downloadUrl,
+                    imageUrl = imageUrl,
                     description = caption,
-                    placeName = "Unknown Place", 
-                    location = "Armenia, Quindío",
+                    placeName = placeName,
+                    location = location,
+                    category = category,
+                    rating = rating,
                     timestamp = System.currentTimeMillis(),
                     vibeSpecs = VibeSpecs(
                         wifiSpeed = wifi,
                         noiseLevel = noise,
-                        comfortLevel = comfort
+                        comfortLevel = comfort,
+                        plugsAvailable = plugs
                     )
                 )
 
                 val success = postRepository.createPost(newPost)
-                if (success) {
-                    onSuccess()
-                } else {
-                    onError("Metadata save failed")
-                }
+                if (success) onSuccess() else onError("Error saving metadata")
             } else {
-                onError("Upload task was not successful")
+                onError("Cloudinary upload failed")
             }
         } catch (e: Exception) {
-            Log.e("DishyApp", "Error fatal: ${e.message}")
-            val msg = e.localizedMessage ?: ""
-            if (msg.contains("Permission denied", ignoreCase = true)) {
-                onError("Error de Permisos: Revisa las reglas de STORAGE en Firebase Console")
-            } else if (msg.contains("Object does not exist", ignoreCase = true)) {
-                onError("Error 404: El archivo no se subió. Revisa tu conexión o reglas de Storage")
-            } else {
-                onError("Error: $msg")
-            }
+            onError("Error: ${e.message}")
         } finally {
             isUploading = false
         }
+    }
+
+    private suspend fun uploadToCloudinary(uri: Uri): String? = suspendCoroutine { continuation ->
+        MediaManager.get().upload(uri)
+            .unsigned("ProjectDISHYApp")
+            .callback(object : UploadCallback {
+                override fun onStart(requestId: String) {}
+                override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
+                override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                    continuation.resume(resultData["secure_url"] as? String)
+                }
+                override fun onError(requestId: String, error: ErrorInfo) {
+                    Log.e("DishyApp", "Cloudinary Error: ${error.description}")
+                    continuation.resume(null)
+                }
+                override fun onReschedule(requestId: String, error: ErrorInfo) {}
+            }).dispatch()
     }
 }

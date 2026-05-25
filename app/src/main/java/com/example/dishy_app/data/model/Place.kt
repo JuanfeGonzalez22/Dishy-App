@@ -3,7 +3,7 @@ package com.example.dishy_app.data.model
 import com.google.firebase.firestore.DocumentId
 
 data class Place(
-    @DocumentId val id: String = "", // Firebase asignará automáticamente el ID del documento aquí
+    @DocumentId val id: String = "",
     val name: String = "",
     val category: String = "",
     val rating: Double = 0.0,

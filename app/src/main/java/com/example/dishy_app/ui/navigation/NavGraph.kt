@@ -81,8 +81,16 @@ fun AppNavGraph(isUserLoggedIn: Boolean = false) {
         }
 
         // 9. Perfil de Usuario
-        composable("profile") {
-            ProfileScreen(navController = navController)
+        composable(
+            route = "profile?userId={userId}",
+            arguments = listOf(navArgument("userId") { 
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId")
+            ProfileScreen(navController = navController, userId = userId)
         }
 
         // 10. Perfil de Dueño de Restaurante
@@ -115,6 +123,15 @@ fun AppNavGraph(isUserLoggedIn: Boolean = false) {
         ) { backStackEntry ->
             val postId = backStackEntry.arguments?.getString("postId") ?: ""
             PostDetailScreen(postId = postId, navController = navController)
+        }
+
+        // 14. Editar Perfil
+        composable(
+            route = "edit_profile/{userId}",
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            EditProfileScreen(userId = userId, navController = navController)
         }
     }
 }

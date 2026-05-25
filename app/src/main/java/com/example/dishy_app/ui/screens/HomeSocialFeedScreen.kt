@@ -1,14 +1,14 @@
 package com.example.dishy_app.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,12 +24,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.data.model.DishyPost
@@ -43,39 +42,81 @@ fun HomeSocialFeedScreen(
     navController: NavController,
     viewModel: HomeViewModel = viewModel()
 ) {
-    var selectedFilter by remember { mutableStateOf("All") }
+    var selectedFilter by remember { mutableStateOf("For you") }
+    var isSearchExpanded by remember { mutableStateOf(false) }
+    
     val places = viewModel.places
     val posts = viewModel.posts
+    val favoritePostIds = viewModel.favoritePostIds
+    val favoritePlaceIds = viewModel.favoritePlaceIds
     val isLoading = viewModel.isLoading
+    val searchQuery = viewModel.searchQuery
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "Dishy",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFF4A3D),
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { /* TODO: Search logic */ }) {
-                        Icon(Icons.Default.Search, "Search", tint = Color.Black)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate("camera") }) {
-                        Icon(Icons.Default.AddAPhoto, "New Post", tint = Color.Black)
-                    }
-                    IconButton(onClick = { FirebaseAuthManager.signOut() }) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, "Logout", tint = Color.Black)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+            Column {
+                CenterAlignedTopAppBar(
+                    title = {
+                        if (!isSearchExpanded) {
+                            Text(
+                                text = "Dishy",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFF4A3D),
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { isSearchExpanded = !isSearchExpanded }) {
+                            Icon(
+                                imageVector = if (isSearchExpanded) Icons.Default.Close else Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = Color.Black
+                            )
+                        }
+                    },
+                    actions = {
+                        if (!isSearchExpanded) {
+                            IconButton(onClick = { navController.navigate("camera") }) {
+                                Icon(Icons.Default.AddAPhoto, "New Post", tint = Color.Black)
+                            }
+                            IconButton(onClick = { FirebaseAuthManager.signOut() }) {
+                                Icon(Icons.AutoMirrored.Filled.Logout, "Logout", tint = Color.Black)
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
-            )
+                
+                AnimatedVisibility(
+                    visible = isSearchExpanded,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.onSearchQueryChange(it) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        placeholder = { Text("Search places, vibes, or categories...") },
+                        leadingIcon = { Icon(Icons.Default.Search, null) },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                    Icon(Icons.Default.Clear, null)
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(24.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFFF4A3D),
+                            unfocusedBorderColor = Color.LightGray
+                        )
+                    )
+                }
+            }
         },
         bottomBar = {
             BottomBarComponent(
@@ -90,24 +131,18 @@ fun HomeSocialFeedScreen(
             )
         }
     ) { paddingValues ->
-        if (isLoading) {
+        if (isLoading && posts.isEmpty() && places.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Color(0xFFFF4A3D))
             }
         } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                // SECCIÓN DE FILTROS
+            Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                // Filtros
                 LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    val filtros = listOf("All", "For you", "Cafes", "Restaurants", "Workspaces", "Bars")
+                    val filtros = listOf("For you", "All", "Cafes", "Restaurants", "Workspaces", "Bars")
                     items(filtros) { filtro ->
                         FilterChip(
                             selected = selectedFilter == filtro,
@@ -121,34 +156,62 @@ fun HomeSocialFeedScreen(
                     }
                 }
 
-                // CONTENIDO DINÁMICO
-                if (selectedFilter == "For you") {
-                    LazyVerticalStaggeredGrid(
-                        columns = StaggeredGridCells.Fixed(2),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 4.dp),
-                        contentPadding = PaddingValues(bottom = 16.dp),
-                        verticalItemSpacing = 4.dp,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(posts) { post ->
-                            StaggeredVibeCard(
-                                post = post,
-                                onClick = { navController.navigate("post_detail/${post.id}") }
-                            )
+                // Feed
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    if (selectedFilter == "For you") {
+                        if (posts.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillParentMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        if (searchQuery.isEmpty()) "No posts yet. Be the first!" 
+                                        else "No results found for \"$searchQuery\"", 
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        } else {
+                            items(posts) { post ->
+                                val isFavorite = favoritePostIds.contains(post.id)
+                                PostCard(
+                                    post = post,
+                                    isFavorite = isFavorite,
+                                    onClick = { navController.navigate("post_detail/${post.id}") },
+                                    onFavoriteClick = { viewModel.toggleFavoritePost(post.id) },
+                                    onArrowClick = {
+                                        if (post.authorRole == "BUSINESS" || post.authorRole == "RESTAURANT") {
+                                            navController.navigate("post_detail/${post.id}")
+                                        } else {
+                                            navController.navigate("profile?userId=${post.userId}")
+                                        }
+                                    }
+                                )
+                            }
                         }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 16.dp)
-                    ) {
-                        items(places) { place ->
-                            PlaceCard(
-                                place = place,
-                                onClick = { navController.navigate("detail/${place.id}") }
-                            )
+                    } else {
+                        val filteredPlaces = if (selectedFilter == "All") places else places.filter { it.category == selectedFilter }
+                        
+                        if (filteredPlaces.isEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("No $selectedFilter found", color = Color.Gray)
+                                }
+                            }
+                        } else {
+                            items(filteredPlaces) { place ->
+                                val isFavorite = favoritePlaceIds.contains(place.id)
+                                PlaceCard(
+                                    place = place,
+                                    isFavorite = isFavorite,
+                                    onClick = { navController.navigate("detail/${place.id}") },
+                                    onFavoriteClick = { viewModel.toggleFavoritePlace(place.id) }
+                                )
+                            }
                         }
                     }
                 }
@@ -158,41 +221,144 @@ fun HomeSocialFeedScreen(
 }
 
 @Composable
-fun StaggeredVibeCard(post: DishyPost, onClick: () -> Unit) {
+fun PostCard(
+    post: DishyPost, 
+    isFavorite: Boolean,
+    onClick: () -> Unit, 
+    onFavoriteClick: () -> Unit,
+    onArrowClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .height(320.dp)
+            .clip(RoundedCornerShape(28.dp))
             .clickable { onClick() }
     ) {
         AsyncImage(
             model = post.imageUrl,
             contentDescription = post.placeName,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxSize()
         )
 
-        // Indicador de vibra sutil
-        Icon(
-            imageVector = if (post.vibeSpecs.wifiSpeed == "High Speed") Icons.Default.Wifi else Icons.Default.Bolt,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.8f),
+        // Gradiente inferior para legibilidad
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                        startY = 300f
+                    )
+                )
+        )
+
+        // Botón Favorito arriba a la izquierda
+        Surface(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+                .size(40.dp)
+                .clickable { onFavoriteClick() },
+            color = Color.White.copy(alpha = 0.8f),
+            shape = CircleShape
+        ) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = "Favorite",
+                tint = if (isFavorite) Color.Red else Color.Black,
+                modifier = Modifier.padding(8.dp).size(24.dp)
+            )
+        }
+
+        // Badge de Vibe arriba a la derecha
+        Surface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(8.dp)
-                .size(16.dp)
-        )
+                .padding(16.dp),
+            color = Color.Black.copy(alpha = 0.3f),
+            shape = CircleShape
+        ) {
+            Icon(
+                imageVector = if (post.vibeSpecs.wifiSpeed == "High Speed") Icons.Default.Wifi else Icons.Default.Bolt,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.padding(8.dp).size(20.dp)
+            )
+        }
+
+        // Información en la parte inferior
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomStart)
+                .padding(16.dp),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = post.placeName.ifBlank { "New Discovery" },
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.LocationOn,
+                        null,
+                        tint = Color(0xFFFF4A3D),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = post.location.ifBlank { "Armenia, Quindío" },
+                        fontSize = 12.sp,
+                        color = Color.LightGray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            // Botón de flecha
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFF4A3D))
+                    .clickable { onArrowClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun PlaceCard(place: Place, onClick: () -> Unit) {
+fun PlaceCard(
+    place: Place, 
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onFavoriteClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .height(200.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .height(320.dp)
+            .clip(RoundedCornerShape(28.dp))
             .clickable { onClick() }
     ) {
         AsyncImage(
@@ -201,38 +367,60 @@ fun PlaceCard(place: Place, onClick: () -> Unit) {
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(0.7f))))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                        startY = 300f
+                    )
+                )
         )
 
-        Column(
+        // Botón Favorito arriba a la izquierda
+        Surface(
             modifier = Modifier
-                .align(Alignment.BottomStart)
+                .align(Alignment.TopStart)
                 .padding(16.dp)
+                .size(40.dp)
+                .clickable { onFavoriteClick() },
+            color = Color.White.copy(alpha = 0.8f),
+            shape = CircleShape
         ) {
-            Text(place.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(place.category, fontSize = 14.sp, color = Color.LightGray)
+            Icon(
+                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = "Favorite",
+                tint = if (isFavorite) Color.Red else Color.Black,
+                modifier = Modifier.padding(8.dp).size(24.dp)
+            )
         }
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFFF4A3D)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, "Ver más", tint = Color.White, modifier = Modifier.size(18.dp))
-        }
-    }
-}
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun HomeScreenPreview() {
-    MaterialTheme {
-        HomeSocialFeedScreen(navController = rememberNavController())
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomStart)
+                .padding(16.dp),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(place.name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Default.LocationOn, null, tint = Color(0xFFFF4A3D), modifier = Modifier.size(14.dp))
+                    Text(place.category, fontSize = 12.sp, color = Color.LightGray)
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFFF4A3D)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
+        }
     }
 }

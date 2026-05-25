@@ -44,10 +44,11 @@ object FirebaseAuthManager {
                 scope.launch {
                     val userData = getUserData(user.uid)
                     
-                    // --- ADMIN QUEMADO ---
-                    if (user.email == "admin@dishy.app") {
+                    // --- LÓGICA DE ADMIN MAESTRO ---
+                    // Ahora cualquier correo que termine en @dishy.app será ADMIN
+                    if (user.email?.endsWith("@dishy.app") == true) {
                         _userRole.value = "ADMIN"
-                        _userName.value = "Super Admin"
+                        _userName.value = userData["name"] as? String ?: "Dishy Admin"
                     } else {
                         _userRole.value = userData["role"] as? String ?: "USER"
                         _userName.value = userData["name"] as? String ?: user.displayName

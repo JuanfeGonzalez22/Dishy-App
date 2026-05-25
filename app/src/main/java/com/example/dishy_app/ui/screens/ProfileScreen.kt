@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material3.*
@@ -18,159 +19,124 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.dishy_app.FirebaseAuthManager
 import com.example.dishy_app.ui.components.BottomBarComponent
+import com.example.dishy_app.ui.components.StatItem
+import com.example.dishy_app.ui.viewModel.HomeViewModel
 
 @Composable
-fun ProfileScreen(navController: NavController) {
-    // Escuchar el rol del usuario desde FirebaseAuthManager
+fun ProfileScreen(navController: NavController, userId: String? = null) {
+    val currentUser by FirebaseAuthManager.currentUser.collectAsState()
     val userRole by FirebaseAuthManager.userRole.collectAsState()
+    val currentUserId = currentUser?.uid
+    
+    val isMyProfile = userId == null || userId == currentUserId
+    val canEdit = isMyProfile || userRole == "ADMIN"
 
-    // Si el rol es BUSINESS, mostramos la pantalla de Business Hub
-    // Si no, mostramos la pantalla de usuario normal
-    if (userRole == "BUSINESS") {
+    if (isMyProfile && userRole == "BUSINESS") {
         RestaurantProfileScreen(navController = navController)
     } else {
-        UserProfileScreen(navController = navController)
+        UserProfileScreen(
+            navController = navController, 
+            isMyProfile = isMyProfile, 
+            canEdit = canEdit,
+            targetUserId = userId ?: currentUserId ?: ""
+        )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserProfileScreen(navController: NavController) {
+fun UserProfileScreen(
+    navController: NavController, 
+    isMyProfile: Boolean, 
+    canEdit: Boolean,
+    targetUserId: String,
+    homeViewModel: HomeViewModel = viewModel()
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    
-    // Obtener datos del usuario real desde Firebase
     val currentUser by FirebaseAuthManager.currentUser.collectAsState()
-    val userName = currentUser?.displayName ?: "User Name"
-    val userEmail = currentUser?.email ?: "user@example.com"
-    val userPhoto = currentUser?.photoUrl?.toString() ?: "https://www.w3schools.com/howto/img_avatar.png"
+    
+    val defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+    val userPosts = homeViewModel.posts.filter { it.userId == targetUserId }
+
+    val userName = if (isMyProfile) (currentUser?.displayName ?: "User Name") else "Member Profile"
+    val userPhoto = if (isMyProfile) (currentUser?.photoUrl?.toString() ?: defaultAvatar) else defaultAvatar
 
     Scaffold(
-        bottomBar = {
-            BottomBarComponent(
-                currentRoute = "profile",
-                onNavigate = { route ->
-                    navController.navigate(route) {
-                        popUpTo("home") { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(if (isMyProfile) "My Profile" else "Profile", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
+        },
+        bottomBar = {
+            if (isMyProfile) {
+                BottomBarComponent(
+                    currentRoute = "profile",
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF8F8F8))
+                .background(Color(0xFFFBFBFB))
         ) {
-            // ... (Resto del código original de ProfileScreen que ahora es UserProfileScreen)
-            // --- HEADER CON GRADIENTE ---
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color(0xFFE0E0E0), Color.White)
-                            )
-                        )
+                AsyncImage(
+                    model = userPhoto,
+                    contentDescription = null,
+                    modifier = Modifier.size(100.dp).clip(CircleShape).border(3.dp, Color.White, CircleShape),
+                    contentScale = ContentScale.Crop
                 )
+                Text(userName, fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 12.dp))
+                Text("Vibe Explorer", fontSize = 13.sp, color = Color.Gray)
+            }
 
-                // Icono de Ajustes
-                IconButton(
-                    onClick = { navController.navigate("settings") },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
+            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                StatItem(userPosts.size.toString(), "Posts")
+                StatItem("0", "Following")
+                StatItem("0", "Followers")
+            }
+
+            if (canEdit) {
+                Button(
+                    onClick = { navController.navigate("edit_profile/$targetUserId") },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.Settings, contentDescription = "Settings")
-                }
-
-                // Info del Perfil
-                Column(
-                    modifier = Modifier.align(Alignment.Center).padding(top = 20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box {
-                        AsyncImage(
-                            model = userPhoto,
-                            contentDescription = "Profile Picture",
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(CircleShape)
-                                .border(2.dp, Color.White, CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFF4A3D))
-                                .clickable { navController.navigate("edit_profile") }
-                                .align(Alignment.BottomEnd)
-                                .border(2.dp, Color.White, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Edit, "", tint = Color.White, modifier = Modifier.size(14.dp))
-                        }
-                    }
-
-                    Text(
-                        text = userName,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Text(
-                        text = userEmail,
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center
-                    )
+                    Text("Edit Profile", fontWeight = FontWeight.Bold)
                 }
             }
 
-            // --- BOTÓN EDIT PROFILE ---
-            Button(
-                onClick = { navController.navigate("edit_profile") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 40.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4A3D)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Edit Profile", color = Color.White)
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // --- ESTADÍSTICAS ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 20.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                StatItem("42", "Places")
-                StatItem("158", "Photos")
-                StatItem("24", "Reviews")
-            }
-
-            // --- TABS ---
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
@@ -178,78 +144,49 @@ fun UserProfileScreen(navController: NavController) {
                 indicator = { tabPositions ->
                     if (selectedTab < tabPositions.size) {
                         TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
                             color = Color(0xFFFF4A3D)
                         )
                     }
-                },
-                divider = {}
+                }
             ) {
                 Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }) {
-                    Text("My Vibes", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.SemiBold)
+                    Text("Vibes", modifier = Modifier.padding(14.dp), fontWeight = FontWeight.Bold)
                 }
                 Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                    Text("Visited History", modifier = Modifier.padding(16.dp), fontWeight = FontWeight.SemiBold)
+                    Text("Saved", modifier = Modifier.padding(14.dp), fontWeight = FontWeight.Bold)
                 }
             }
 
-            // --- GRID DE IMÁGENES ---
-            val photoList = listOf("p1", "p2", "p3", "p4", "p5")
             LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                columns = GridCells.Fixed(3),
+                contentPadding = PaddingValues(1.dp),
+                horizontalArrangement = Arrangement.spacedBy(1.dp),
+                verticalArrangement = Arrangement.spacedBy(1.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                items(photoList) { _ ->
-                    Box(
-                        modifier = Modifier
-                            .aspectRatio(0.8f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color.LightGray)
-                    ) {
-                        AsyncImage(
-                            model = "https://via.placeholder.com/300",
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                }
-                item {
-                    Box(
-                        modifier = Modifier
-                            .aspectRatio(0.8f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFE9EEF3))
-                            .clickable { /* TODO: Implement add photo logic or navigate */ }
-                            .border(1.dp, Color.LightGray, RoundedCornerShape(16.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Outlined.AddAPhoto, null, tint = Color.Gray)
-                            Text("Add New", fontSize = 12.sp, color = Color.Gray)
+                if (isMyProfile) {
+                    item {
+                        Box(
+                            modifier = Modifier.aspectRatio(1f).background(Color(0xFFF1F3F4)).clickable { navController.navigate("camera") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Outlined.AddAPhoto, null, tint = Color.Gray, modifier = Modifier.size(24.dp))
+                                Text("Add Vibe", fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
+                }
+                items(userPosts) { post ->
+                    AsyncImage(
+                        model = post.imageUrl,
+                        contentDescription = null,
+                        modifier = Modifier.aspectRatio(1f).clickable { navController.navigate("post_detail/${post.id}") },
+                        contentScale = ContentScale.Crop
+                    )
                 }
             }
         }
     }
-}
-
-
-@Composable
-fun StatItem(number: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = number, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF4A3D))
-        Text(text = label, fontSize = 12.sp, color = Color.Gray)
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun ProfileScreenPreview() {
-    val navController = rememberNavController()
-    ProfileScreen(navController = navController)
 }
